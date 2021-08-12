@@ -12,3 +12,7 @@ A set of Python routines to compute the total variation of images using PyTorch 
 # Example
 
 `import PyTV as tv`
+
+# Visualizing output data
+
+I recommend using Fiji to visualize the output data from PyRAMID. It enables a quick drag and drop from the .tif stack stored in folders.
