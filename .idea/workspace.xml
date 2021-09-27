@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="d4674d05-ba59-43d3-a3eb-732862d17c2d" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/other.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tv_2d.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/PyTV.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/PyTV.iml" afterDir="false" />
+    <list default="true" id="d4674d05-ba59-43d3-a3eb-732862d17c2d" name="Changes" comment="Implemented 3D TV CPU">
+      <change afterPath="$PROJECT_DIR$/tv_pyTorch_2d.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/sample.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/sample.ipynb" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tv.py" beforeDir="false" afterPath="$PROJECT_DIR$/tv.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tv_2d.py" beforeDir="false" afterPath="$PROJECT_DIR$/tv_2d.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tv_pyTorch.py" beforeDir="false" afterPath="$PROJECT_DIR$/tv_pyTorch.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -75,7 +75,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1632755667177</updated>
-      <workItem from="1632756355518" duration="9005000" />
+      <workItem from="1632756355518" duration="12224000" />
     </task>
     <task id="LOCAL-00001" summary="Update README.md">
       <created>1632755700529</created>
@@ -84,7 +84,14 @@
       <option name="project" value="LOCAL" />
       <updated>1632755700529</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="Implemented 3D TV CPU">
+      <created>1632769892985</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1632769892986</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -92,6 +99,7 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Update README.md" />
-    <option name="LAST_COMMIT_MESSAGE" value="Update README.md" />
+    <MESSAGE value="Implemented 3D TV CPU" />
+    <option name="LAST_COMMIT_MESSAGE" value="Implemented 3D TV CPU" />
   </component>
 </project>

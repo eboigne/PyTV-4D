@@ -117,12 +117,3 @@ def tv_upwind(img, mask = []):
     G[:-1, 1:] += col_diff[:-1, :-1]/grad_norms[:-1, :-1]
 
     return (tv, G)
-
-# def tv_mixture(img, mask = []):
-#
-#     (tv1, G1) = tv_downwind(img, mask = mask)
-#     (tv2, G2) = tv_upwind(img, mask = mask)
-#     tv = (tv1+tv2)/2.0
-#     G = (G1+G2)/2.0
-#
-#     return(tv, G)
