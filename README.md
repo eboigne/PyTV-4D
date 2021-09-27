@@ -1,5 +1,5 @@
 # PyTV
-A set of Python routines to compute the total variation of images using PyTorch convolution kernels
+A set of Python routines to compute the total variation of images using PyTorch convolution kernels for different gradient discretization.
 
 # Current features
 
@@ -13,6 +13,4 @@ A set of Python routines to compute the total variation of images using PyTorch 
 
 `import PyTV as tv`
 
-# Visualizing output data
-
-I recommend using Fiji to visualize the output data from PyRAMID. It enables a quick drag and drop from the .tif stack stored in folders.
+# Choice of gradient discretization
