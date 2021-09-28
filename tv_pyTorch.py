@@ -211,6 +211,11 @@ def tv_upwind(img, mask = []):
     col_diff_tensor[:, :, :-1] = torch.nn.functional.conv3d(img_tensor, kernel_col, bias=None, stride=1, padding = 0).squeeze()
     slice_diff_tensor[:-1, :, :] = torch.nn.functional.conv3d(img_tensor, kernel_slice, bias=None, stride=1, padding = 0).squeeze()
 
+    # This is equivalent (without reshaping img as above), but slightly slower (15-20%)
+    # row_diff_tensor[:, :-1, :] = img_tensor[:, 1:,:] - img_tensor[:,:-1,:]
+    # col_diff_tensor[:, :, :-1] = img_tensor[:,:,1:] - img_tensor[:,:,:-1]
+    # slice_diff_tensor[:-1, :, :] = img_tensor[1:,:,:] - img_tensor[:-1,:,:]
+
     # To match CPU explicit versions
     row_diff_tensor[:, :, -1] = 0
     row_diff_tensor[-1, :, :] = 0

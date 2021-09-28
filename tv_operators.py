@@ -22,11 +22,6 @@ def compute_L21_norm(D_img):
     out = np.sqrt(out)
     out = np.sum(out) #, axis = (-1,-2))
 
-    # out = np.square(D_img)
-    # out = np.sum(out, axis = tuple(range(len(D_img.shape)-3)))
-    # out = np.sqrt(out)
-    # out = np.sum(out, axis = (-1,-2))
-
     return(out)
 
 def D_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, halve_tv_at_both_end = False, factor_reg_static = 0, mask_static = False):
