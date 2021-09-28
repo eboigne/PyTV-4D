@@ -7,7 +7,7 @@ def tv_centered(img, mask = []):
     if mask != []:
         img[~mask] = 0
 
-    if len(img) == 2:
+    if len(img.shape) == 2:
         return(tv_2d.tv_centered(img))
     elif (len(img.shape) == 3 and img.shape[0] < 3):
         return(tv_2d.tv_centered(img[0]))
@@ -45,7 +45,7 @@ def tv_hybrid(img, mask = []):
     if mask != []:
         img[~mask] = 0
 
-    if len(img) == 2:
+    if len(img.shape) == 2:
         return(tv_2d.tv_hybrid(img))
     elif (len(img.shape) == 3 and img.shape[0] < 1):
         return(tv_2d.tv_hybrid(img[0]))
@@ -94,7 +94,7 @@ def tv_downwind(img, mask = []):
     if mask != []:
         img[~mask] = 0
 
-    if len(img) == 2:
+    if len(img.shape) == 2:
         return(tv_2d.tv_downwind(img))
     elif (len(img.shape) == 3 and img.shape[0] == 1):
         return(tv_2d.tv_downwind(img[0]))
@@ -134,7 +134,7 @@ def tv_upwind(img, mask = []):
     if mask != []:
         img[~mask] = 0
 
-    if len(img) == 2:
+    if len(img.shape) == 2:
         return(tv_2d.tv_upwind(img))
     elif (len(img.shape) == 3 and img.shape[0] == 1):
         return(tv_2d.tv_upwind(img[0]))

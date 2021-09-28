@@ -1,22 +1,25 @@
 import numpy as np
 
 
-def test_transpose(operator, operator_transposed, n_rays = 100, n_test = 5, tolerance = 1e-3, dtype = 'float32', verbose = False): # Good test
+def test_transpose(operator, operator_transposed, n_rays = 100, n_test = 5, tolerance = 1e-3, dtype = 'float32', verbose = False, nz = 1): # Good test
     res = True
     count_wrong = 0
 
-    X = np.random.randn(n_rays, n_rays) # N x N
+    if nz == 1:
+        X = np.random.randn(n_rays, n_rays) # N x N
+    else:
+        X = np.random.randn(nz, n_rays, n_rays) # N x N
     Y_shape = operator(X)
 
     for i in range(n_test):
 
         # Generate arrays
-        X = np.random.randn(n_rays, n_rays).astype(dtype) # Eg: N x N
+        X = np.random.randn(*X.shape).astype(dtype) # Eg: N x N
         Y = np.random.randn(*Y_shape.shape).astype(dtype) # Eg: 4 X N x N
 
         # Element-wise multiplications
         dot_product_1 = np.sum(Y * operator(X))
-        dot_product_2 = np.sum(X * operator_transposed(Y))
+        dot_product_2 = np.sum(X * np.squeeze(operator_transposed(Y)))
 
         mean_dot_product = 0.5 * (dot_product_1 + dot_product_2)
 

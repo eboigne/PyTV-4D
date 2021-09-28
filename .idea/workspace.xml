@@ -1,13 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="d4674d05-ba59-43d3-a3eb-732862d17c2d" name="Changes" comment="Implemented 3D TV CPU">
-      <change afterPath="$PROJECT_DIR$/tv_pyTorch_2d.py" afterDir="false" />
+    <list default="true" id="d4674d05-ba59-43d3-a3eb-732862d17c2d" name="Changes" comment="Implemented 3D TV operator CPU: upwind">
+      <change afterPath="$PROJECT_DIR$/../PhD/Python/stem_ct/.ipynb_checkpoints/7_phantomNetworkFromCGLSdata-checkpoint.ipynb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../PhD/Python/stem_ct/7_phantomNetworkFromCGLSdata.ipynb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../PyRAMID/paper/.ipynb_checkpoints/b_plot_TV_schemes-checkpoint.ipynb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tv_operators_2d.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../PhD/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../PhD/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../PhD/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../PhD/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../PhD/Python/cantera/.ipynb_checkpoints/soot_flame_counterFlowDiffusionSetup-checkpoint.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/../PhD/Python/cantera/.ipynb_checkpoints/soot_flame_counterFlowDiffusionSetup-checkpoint.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../PhD/Python/cantera/soot_flame_counterFlowDiffusionSetup.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/../PhD/Python/cantera/soot_flame_counterFlowDiffusionSetup.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../PhD/Python/plot_template.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/../PhD/Python/plot_template.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../PhD/Python/soot/01_scriptToModifyVariablesInSolutionField/scriptToModifyVariablesInSolutionField.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/../PhD/Python/soot/01_scriptToModifyVariablesInSolutionField/scriptToModifyVariablesInSolutionField.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../PhD/Python/stem_ct/.ipynb_checkpoints/6_phantomNetwork-checkpoint.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/../PhD/Python/stem_ct/.ipynb_checkpoints/6_phantomNetwork-checkpoint.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../PhD/Python/stem_ct/6_phantomNetwork.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/../PhD/Python/stem_ct/6_phantomNetwork.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../PyRAMID/input.py" beforeDir="false" afterPath="$PROJECT_DIR$/../PyRAMID/input.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../PyRAMID/paper/b_plot_TV_schemes.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/../PyRAMID/paper/b_plot_TV_schemes.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../PyRAMID/run.py" beforeDir="false" afterPath="$PROJECT_DIR$/../PyRAMID/run.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../PyRAMID/tomo/algorithm.py" beforeDir="false" afterPath="$PROJECT_DIR$/../PyRAMID/tomo/algorithm.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/PyTV.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/PyTV.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/sample.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/sample.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tv.py" beforeDir="false" afterPath="$PROJECT_DIR$/tv.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tv_2d.py" beforeDir="false" afterPath="$PROJECT_DIR$/tv_2d.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tv_pyTorch.py" beforeDir="false" afterPath="$PROJECT_DIR$/tv_pyTorch.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tv_operators.py" beforeDir="false" afterPath="$PROJECT_DIR$/tv_operators.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -26,6 +44,7 @@
     </file-type-list>
   </component>
   <component name="ProjectId" id="1yjCZgHkTScZnF4S3GEPrzfrqH4" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
@@ -35,7 +54,7 @@
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../PyRAMID" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
   <component name="RecentsManager">
@@ -75,7 +94,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1632755667177</updated>
-      <workItem from="1632756355518" duration="12224000" />
+      <workItem from="1632756355518" duration="20090000" />
     </task>
     <task id="LOCAL-00001" summary="Update README.md">
       <created>1632755700529</created>
@@ -91,7 +110,14 @@
       <option name="project" value="LOCAL" />
       <updated>1632769892986</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="Implemented 3D TV GPU">
+      <created>1632778421976</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1632778421976</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -100,6 +126,7 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Update README.md" />
     <MESSAGE value="Implemented 3D TV CPU" />
-    <option name="LAST_COMMIT_MESSAGE" value="Implemented 3D TV CPU" />
+    <MESSAGE value="Implemented 3D TV GPU" />
+    <option name="LAST_COMMIT_MESSAGE" value="Implemented 3D TV GPU" />
   </component>
 </project>

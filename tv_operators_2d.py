@@ -18,10 +18,9 @@ def compute_L21_norm(D_img):
     '''
 
     out = np.square(D_img)
-    out = np.sum(out, axis = 1) # tuple(range(len(D_img.shape)-3)))
+    out = np.sum(out, axis = tuple(range(len(D_img.shape)-3)))
     out = np.sqrt(out)
-    out = np.sum(out) #, axis = (-1,-2))
-
+    out = np.sum(out, axis = (-1,-2))
     return(out)
 
 def D_hybrid(img, reg_z_over_reg = 0, reg_time = 0, halve_tv_at_both_end = False, factor_reg_static = 0, mask_static = False):
@@ -261,15 +260,14 @@ def D_downwind(img, reg_z_over_reg = 0, reg_time = 0):
 
     return D_img
 
-def D_upwind(img, reg_z_over_reg = 1.0, reg_time = 0, pad = 1):
+def D_upwind(img, reg_z_over_reg = 0, reg_time = 0, pad = 1):
     '''
-    Calculates the image of the operator D (gradient discretized using upwind scheme) applied to variable img
+    Calculates the image of the operator D (gradient discretized using centered scheme) applied to variable img
     Parameters:
         img : img of dimensions Nz x M x N x N
     Returns:
-        out: D(img) of dimensions Nz x Nd x M x N x N, Nd = 2, 3 or 4.
+        out: D(img) of dimensions Nz x 2/3/4 x M x N x N
     '''
-
     if reg_z_over_reg == np.nan:
         reg_z_over_reg = 0.0
 
@@ -285,26 +283,22 @@ def D_upwind(img, reg_z_over_reg = 1.0, reg_time = 0, pad = 1):
     D_img = np.zeros([Nz, N_d, M, N, N])
 
     # The intensity differences across rows (Upwind / Forward)
-    if Nz > 1:
-        D_img[:-1, 0, :, :-1, :-1] = img[:-1, :, 1:, :-1] - img[:-1, :, :-1, :-1]
-    else:
-        D_img[:, 0, :, :-1, :-1] = img[:, :, 1:, :-1] - img[:, :, :-1, :-1]
+    # D_img[:,0,:,:-1,:] = img[:,:, 1:, :] - img[:,:, :-1, :]  # The row_diff at the last row is 0
+    D_img[:,0,:,:-1,:-1] = img[:,:, 1:, :-1] - img[:,:, :-1, :-1]
 
     # The intensity differences across columns (Upwind / Forward)
-    if Nz > 1:
-        D_img[:-1, 1, :, :-1, :-1] = img[:-1, :, :-1, 1:] - img[:-1, :, :-1, :-1]
-    else:
-        D_img[:, 1, :, :-1, :-1] = img[:, :, :-1, 1:] - img[:, :, :-1, :-1]
+    # D_img[:,1,:,:,:-1] = img[:,:, :, 1:] - img[:,:, :, :-1]
+    D_img[:,1,:,:-1,:-1] = img[:,:, :-1, 1:] - img[:,:, :-1, :-1]
 
     i_d = 2
     if Nz > 1 and reg_z_over_reg > 0:
-        # The intensity differences across slices (Upwind / Forward)
-        D_img[:-1, i_d, :, :-1, :-1] = np.sqrt(reg_z_over_reg) * (img[1:, :, :-1, :-1] - img[:-1, :, :-1, :-1])
+        # The intensity differences across z (Upwind / Forward)
+        D_img[:-1,i_d,:,:,:] = np.sqrt(reg_z_over_reg) * (img[1:,:, :, :] - img[:-1,:, :, :])  # The row_diff at the last z is 0
         i_d += 1
-
+        
     if reg_time > 0 and M > 1:
-        # The intensity differences across times (Upwind / Forward)
-        D_img[:, i_d, :-1, :, :] = np.sqrt(reg_time) * (img[:, 1:, :, :] - img[:, :-1, :, :])
+        # f^k+1 - f^k
+        D_img[:,i_d,:-1,:,:] =  np.sqrt(reg_time) * (img[:,1:,:,:] - img[:,:-1,:,:])
         i_d += 1
 
     return D_img
@@ -359,7 +353,7 @@ def D_centered(img, reg_z_over_reg = 0, reg_time = 0):
 
     return (D_img)
 
-def D_T_downwind(img, reg_z_over_reg = 1.0, reg_time = 0):
+def D_T_downwind(img, reg_z_over_reg = 0, reg_time = 0):
     '''
     Calculates the image of the operator D^T (transposed gradient discretized using centered scheme) applied to variable img
     Parameters:
@@ -416,57 +410,52 @@ def D_T_downwind(img, reg_z_over_reg = 1.0, reg_time = 0):
 
     return(D_T_img)
 
-def D_T_upwind(img, reg_z_over_reg = 1.0, reg_time = 0):
+def D_T_upwind(img, reg_z_over_reg = 0, reg_time = 0):
     '''
-    Calculates the image of the operator D^T (transposed gradient discretized using upwind scheme) applied to variable img
+    Calculates the image of the operator D^T (transposed gradient discretized using centered scheme) applied to variable img
     Parameters:
-        img : img of dimensions Nz x Nd x M x N x N
+        img : img of dimensions squeeze(Nz x 4/6/8 x M x N x N)
     Returns: 
         out: D_T(img) of dimensions Nz x N x N (or Nz x M x N x N)
     '''
 
     if reg_z_over_reg == np.nan:
         reg_z_over_reg = 0.0
-
+        
+#     if img.shape[0] == 4 and len(img.shape) == 3:
+#         img = np.reshape(img, [1, img.shape[0], img.shape[1], img.shape[2]])
+#     if img.shape[0] == 6 and len(img.shape) == 4:
+#         img = np.reshape(img, [1, img.shape[0], img.shape[1], img.shape[2], img.shape[3]])
+    
     Nz = img.shape[0]
-    Nd = img.shape[1]
-    M = img.shape[2]
+    N_d = img.shape[1]
     N = img.shape[-1]
-
+        
+    M = img.shape[2]
     D_T_img = np.zeros([Nz, M, N, N])
 
-    if Nz > 1:
-        # Forward row term
-        D_T_img[:-1,:,1:-1,:-1] += img[:-1,0,:,:-2,:-1]-img[:-1,0,:,1:-1,:-1]
-        D_T_img[:-1,:,0,:-1] += -img[:-1,0,:,0,:-1]
-        D_T_img[:-1,:,-1,:-1] += img[:-1,0,:,-2,:-1]
+    # Forward row term
+    # D_T_img[:,:,1:-1,:] += img[:,0,:,:-2,:]-img[:,0,:,1:-1,:]
+    # D_T_img[:,:,0,:] += -img[:,0,:,0,:]
+    # D_T_img[:,:,-1,:] += img[:,0,:,-2,:]
+    D_T_img[:,:,1:-1,:-1] += img[:,0,:,:-2,:-1]-img[:,0,:,1:-1,:-1]
+    D_T_img[:,:,0,:-1] += -img[:,0,:,0,:-1]
+    D_T_img[:,:,-1,:-1] += img[:,0,:,-2,:-1]
 
-        # Forward col term
-        D_T_img[:-1,:,:-1,1:-1] += img[:-1,1,:,:-1,:-2]-img[:-1,1,:,:-1,1:-1]
-        D_T_img[:-1,:,:-1,0] += -img[:-1,1,:,:-1,0]
-        D_T_img[:-1,:,:-1,-1] += img[:-1,1,:,:-1,-2]
-
-    else:
-        # Forward row term
-        D_T_img[:,:,1:-1,:-1] += img[:,0,:,:-2,:-1]-img[:,0,:,1:-1,:-1]
-        D_T_img[:,:,0,:-1] += -img[:,0,:,0,:-1]
-        D_T_img[:,:,-1,:-1] += img[:,0,:,-2,:-1]
-
-        # Forward col term
-        D_T_img[:,:,:-1,1:-1] += img[:,1,:,:-1,:-2]-img[:,1,:,:-1,1:-1]
-        D_T_img[:,:,:-1,0] += -img[:,1,:,:-1,0]
-        D_T_img[:,:,:-1,-1] += img[:,1,:,:-1,-2]
+    # Forward col term
+    # D_T_img[:,:,:,1:-1] += img[:,1,:,:,:-2]-img[:,1,:,:,1:-1]
+    # D_T_img[:,:,:,0] += -img[:,1,:,:,0]
+    # D_T_img[:,:,:,-1] += img[:,1,:,:,-2]
+    D_T_img[:,:,:-1,1:-1] += img[:,1,:,:-1,:-2]-img[:,1,:,:-1,1:-1]
+    D_T_img[:,:,:-1,0] += -img[:,1,:,:-1,0]
+    D_T_img[:,:,:-1,-1] += img[:,1,:,:-1,-2]
 
     i_d = 2
     if Nz > 1 and reg_z_over_reg > 0: # z-terms
         # Forward z term
-        D_T_img[1:-1,:,:-1,:-1] += np.sqrt(reg_z_over_reg) * (img[:-2,i_d,:,:-1,:-1]-img[1:-1,i_d,:,:-1,:-1])
-        D_T_img[0,:,:-1,:-1] += -np.sqrt(reg_z_over_reg) * img[0,i_d,:,:-1,:-1]
-        D_T_img[-1,:,:-1,:-1] += np.sqrt(reg_z_over_reg) * img[-2,i_d,:,:-1,:-1]
-
-        # D_T_img[1:-1,:,:,:] += np.sqrt(reg_z_over_reg) * (img[:-2,i_d,:,:,:]-img[1:-1,i_d,:,:,:])
-        # D_T_img[0,:,:,:] += -np.sqrt(reg_z_over_reg) * img[0,i_d,:,:,:]
-        # D_T_img[-1,:,:,:] += np.sqrt(reg_z_over_reg) * img[-2,i_d,:,:,:]
+        D_T_img[1:-1,:,:,:] += np.sqrt(reg_z_over_reg) * (img[:-2,i_d,:,:,:]-img[1:-1,i_d,:,:,:])
+        D_T_img[0,:,:,:] += -np.sqrt(reg_z_over_reg) * img[0,i_d,:,:,:]
+        D_T_img[-1,:,:,:] += np.sqrt(reg_z_over_reg) * img[-2,i_d,:,:,:]
         i_d += 1
 
     if reg_time > 0 and M > 1:
