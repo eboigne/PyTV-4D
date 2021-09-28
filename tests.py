@@ -1,14 +1,11 @@
 import numpy as np
 
 
-def test_transpose(operator, operator_transposed, n_rays = 100, n_test = 5, tolerance = 1e-3, dtype = 'float32', verbose = False, nz = 1): # Good test
+def test_transpose(operator, operator_transposed, n_rays = 100, n_test = 5, tolerance = 1e-3, dtype = 'float32', verbose = False, nz = 1, M = 1): # Good test
     res = True
     count_wrong = 0
 
-    if nz == 1:
-        X = np.random.randn(n_rays, n_rays) # N x N
-    else:
-        X = np.random.randn(nz, n_rays, n_rays) # N x N
+    X = np.squeeze(np.random.randn(nz, M, n_rays, n_rays)) # (Nz) x (M) x N x N
     Y_shape = operator(X)
 
     for i in range(n_test):

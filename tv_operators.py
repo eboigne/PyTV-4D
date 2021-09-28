@@ -22,6 +22,11 @@ def compute_L21_norm(D_img):
     out = np.sqrt(out)
     out = np.sum(out) #, axis = (-1,-2))
 
+    # out = np.square(D_img)
+    # out = np.sum(out, axis = tuple(range(len(D_img.shape)-3)))
+    # out = np.sqrt(out)
+    # out = np.sum(out, axis = (-1,-2))
+
     return(out)
 
 def D_hybrid(img, reg_z_over_reg = 0, reg_time = 0, halve_tv_at_both_end = False, factor_reg_static = 0, mask_static = False):
@@ -304,7 +309,7 @@ def D_upwind(img, reg_z_over_reg = 1.0, reg_time = 0, pad = 1):
 
     if reg_time > 0 and M > 1:
         # The intensity differences across times (Upwind / Forward)
-        D_img[:, i_d, :-1, :, :] = np.sqrt(reg_time) * (img[:, 1:, :, :] - img[:, :-1, :, :])
+        D_img[:-1, i_d, :-1, :-1, :-1] = np.sqrt(reg_time) * (img[:-1, 1:, :-1, :-1] - img[:-1, :-1, :-1, :-1])
         i_d += 1
 
     return D_img
@@ -464,16 +469,13 @@ def D_T_upwind(img, reg_z_over_reg = 1.0, reg_time = 0):
         D_T_img[0,:,:-1,:-1] += -np.sqrt(reg_z_over_reg) * img[0,i_d,:,:-1,:-1]
         D_T_img[-1,:,:-1,:-1] += np.sqrt(reg_z_over_reg) * img[-2,i_d,:,:-1,:-1]
 
-        # D_T_img[1:-1,:,:,:] += np.sqrt(reg_z_over_reg) * (img[:-2,i_d,:,:,:]-img[1:-1,i_d,:,:,:])
-        # D_T_img[0,:,:,:] += -np.sqrt(reg_z_over_reg) * img[0,i_d,:,:,:]
-        # D_T_img[-1,:,:,:] += np.sqrt(reg_z_over_reg) * img[-2,i_d,:,:,:]
         i_d += 1
 
     if reg_time > 0 and M > 1:
         # Forward time term
-        D_T_img[:,1:-1,:,:] += np.sqrt(reg_time) * (img[:,i_d,:-2,:,:]-img[:,i_d,1:-1,:,:])
-        D_T_img[:,0,:,:] += -np.sqrt(reg_time) * img[:,i_d,0,:,:]
-        D_T_img[:,-1,:,:] += np.sqrt(reg_time) * img[:,i_d,-2,:,:]
+        D_T_img[:-1,1:-1,:-1,:-1] += np.sqrt(reg_time) * (img[:-1,i_d,:-2,:-1,:-1]-img[:-1,i_d,1:-1,:-1,:-1])
+        D_T_img[:-1,0,:-1,:-1] += -np.sqrt(reg_time) * img[:-1,i_d,0,:-1,:-1]
+        D_T_img[:-1,-1,:-1,:-1] += np.sqrt(reg_time) * img[:-1,i_d,-2,:-1,:-1]
         i_d += 1
 
     return(D_T_img)
