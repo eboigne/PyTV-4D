@@ -4,10 +4,7 @@
     <list default="true" id="d4674d05-ba59-43d3-a3eb-732862d17c2d" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/sample.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/sample.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tv_operators.py" beforeDir="false" afterPath="$PROJECT_DIR$/tv_operators.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tv_operators_2d.py" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/tv_operators_pyTorch.py" beforeDir="false" afterPath="$PROJECT_DIR$/tv_operators_pyTorch.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tv_pyTorch.py" beforeDir="false" afterPath="$PROJECT_DIR$/tv_pyTorch.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -91,7 +88,7 @@
       <option name="presentableId" value="Default" />
       <updated>1632755667177</updated>
       <workItem from="1632756355518" duration="27377000" />
-      <workItem from="1632849667800" duration="11499000" />
+      <workItem from="1632849667800" duration="15096000" />
     </task>
     <task id="LOCAL-00001" summary="Update README.md">
       <created>1632755700529</created>
@@ -135,7 +132,14 @@
       <option name="project" value="LOCAL" />
       <updated>1632854565733</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="Implemented 3D TV operator GPU: D for upwind">
+      <created>1632865959887</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1632865959887</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -147,6 +151,7 @@
     <MESSAGE value="Implemented 3D TV GPU" />
     <MESSAGE value="Implemented 3D TV operator CPU: D_upwind &amp; D_T_upwind" />
     <MESSAGE value="Implemented 3D TV operator CPU: D &amp; D_T for downwind, centered and hybrid" />
-    <option name="LAST_COMMIT_MESSAGE" value="Implemented 3D TV operator CPU: D &amp; D_T for downwind, centered and hybrid" />
+    <MESSAGE value="Implemented 3D TV operator GPU: D for upwind" />
+    <option name="LAST_COMMIT_MESSAGE" value="Implemented 3D TV operator GPU: D for upwind" />
   </component>
 </project>

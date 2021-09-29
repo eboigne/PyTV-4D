@@ -328,79 +328,51 @@ def D_upwind(img, reg_z_over_reg = 1.0, reg_time = 0, return_pytorch_tensor = Fa
         N_d += 1
     if reg_time > 0 and M > 1:
         N_d += 1
-    D_img = torch.zeros([Nz, N_d, M, N, N])
-
     i_d = 2
 
-    if reg_z_over_reg == 0 or Nz == 1: # 2D convolutions, Nz can be 1 or > 1.
-        kernel_col = np.array([[-1,1]]).astype('float32')
-        kernel_col =  torch.as_tensor(np.reshape(kernel_col, (1,1)+kernel_col.shape)).cuda()
+    D_img = torch.zeros([Nz, N_d, M, N, N])
 
-        kernel_row = np.array([[-1],[1]]).astype('float32')
-        kernel_row =  torch.as_tensor(np.reshape(kernel_row, (1,1)+kernel_row.shape)).cuda()
+    kernel_col = np.array([[[-1,1]]]).astype('float32')
+    kernel_col = torch.as_tensor(np.reshape(kernel_col, (1,1)+kernel_col.shape)).cuda()
 
-        img_tensor = torch.as_tensor(img.astype('float32')).cuda()
-        if M > 1:
-            img_tensor = torch.transpose(img_tensor, 0, 1)
-        row_diff_tensor = torch.zeros_like(img_tensor)
-        col_diff_tensor = torch.zeros_like(img_tensor)
+    kernel_row = np.array([[[-1],[1]]]).astype('float32')
+    kernel_row = torch.as_tensor(np.reshape(kernel_row, (1,1)+kernel_row.shape)).cuda()
 
-        # img_tensor of size: (N,Cin,H,W), N: batch size, Cin: number of input channels.
-        row_diff_tensor[:,:, :-1, :] = torch.nn.functional.conv2d(img_tensor, kernel_row, bias=None, stride=1, padding = 0)
-        col_diff_tensor[:,:, :, :-1] = torch.nn.functional.conv2d(img_tensor, kernel_col, bias=None, stride=1, padding = 0)
+    img = np.reshape(img, (1,)+img.shape).astype('float32')
+    img_tensor = torch.as_tensor(np.transpose(img.astype('float32'), [2, 0, 1, 3, 4])).cuda() # (M, 1, Nz, N, N)
+    row_diff_tensor = torch.zeros_like(img_tensor)
+    col_diff_tensor = torch.zeros_like(img_tensor)
 
-        # To match CPU explicit versions
-        row_diff_tensor[:,:, :,-1] = 0
-        col_diff_tensor[:,:, -1,:] = 0
+    # img_tensor of size: (N,Cin,D,H,W), N: batch size, Cin: number of input channels.
+    row_diff_tensor[:, :, :, :-1, :] = torch.nn.functional.conv3d(img_tensor, kernel_row, bias=None, stride=1, padding = 0)
+    col_diff_tensor[:, :, :, :, :-1] = torch.nn.functional.conv3d(img_tensor, kernel_col, bias=None, stride=1, padding = 0)
 
-        if M > 1:
-            row_diff_tensor = torch.transpose(row_diff_tensor, 0, 1)
-            col_diff_tensor = torch.transpose(col_diff_tensor, 0, 1)
-            img_tensor = torch.transpose(img_tensor, 0, 1)
+    # To match CPU explicit versions
+    row_diff_tensor[:, :, :, :, -1] = 0
+    col_diff_tensor[:, :, :, -1, :] = 0
 
-        if Nz > 1:
-            D_img[:-1,0,:,:-1,:-1] = row_diff_tensor[:-1,:, :-1,:-1]
-            D_img[:-1,1,:,:-1,:-1] = col_diff_tensor[:-1,:, :-1,:-1]
-        else:
-            D_img[:,0,:,:-1,:-1] = row_diff_tensor[:,:, :-1,:-1]
-            D_img[:,1,:,:-1,:-1] = col_diff_tensor[:,:, :-1,:-1]
-
-    else: # 3D convolutions
-        kernel_col = np.array([[[-1,1]]]).astype('float32')
-        kernel_col =  torch.as_tensor(np.reshape(kernel_col, (1,1)+kernel_col.shape)).cuda()
-
-        kernel_row = np.array([[[-1],[1]]]).astype('float32')
-        kernel_row =  torch.as_tensor(np.reshape(kernel_row, (1,1)+kernel_row.shape)).cuda()
-
+    if reg_z_over_reg > 0 and Nz > 1:
         kernel_slice = np.array([[[-1]],[[1]]]).astype('float32')
         kernel_slice = torch.as_tensor(np.reshape(kernel_slice, (1,1)+kernel_slice.shape)).cuda()
-
-        img = np.reshape(img, (1,)+img.shape).astype('float32')
-        img_tensor = torch.as_tensor(np.transpose(img.astype('float32'), [2, 0, 1, 3, 4])).cuda() # (M, 1, Nz, N, N)
-        row_diff_tensor = torch.zeros_like(img_tensor)
-        col_diff_tensor = torch.zeros_like(img_tensor)
         slice_diff_tensor = torch.zeros_like(img_tensor)
-
-        # img_tensor of size: (N,Cin,D,H,W), N: batch size, Cin: number of input channels.
-        row_diff_tensor[:, :, :, :-1, :] = torch.nn.functional.conv3d(img_tensor, kernel_row, bias=None, stride=1, padding = 0)
-        col_diff_tensor[:, :, :, :, :-1] = torch.nn.functional.conv3d(img_tensor, kernel_col, bias=None, stride=1, padding = 0)
         slice_diff_tensor[:, :, :-1, :, :] = torch.nn.functional.conv3d(img_tensor, kernel_slice, bias=None, stride=1, padding = 0)
-
-        # To match CPU explicit versions
-        row_diff_tensor[:, :, :, :, -1] = 0
-        col_diff_tensor[:, :, :, -1, :] = 0
         slice_diff_tensor[:, :, -1, :, :] = 0
 
-         # Re-transpose to (Nz, M, N, N)
+     # Re-transpose to (Nz, M, N, N)
+    if Nz > 1:
         D_img[:-1, 0, :, :-1, :-1] = torch.transpose(row_diff_tensor[:, 0, :-1, :-1, :-1], 1, 0)
         D_img[:-1, 1, :, :-1, :-1] = torch.transpose(col_diff_tensor[:, 0, :-1, :-1, :-1], 1, 0)
+    else:
+        D_img[:, 0, :, :-1, :-1] = torch.transpose(row_diff_tensor[:, 0, :, :-1, :-1], 1, 0)
+        D_img[:, 1, :, :-1, :-1] = torch.transpose(col_diff_tensor[:, 0, :, :-1, :-1], 1, 0)
+
+    if reg_z_over_reg > 0 and Nz > 1:
         D_img[:-1, 2, :, :-1, :-1] = torch.transpose(slice_diff_tensor[:, 0, :-1, :-1, :-1], 1, 0)
-
-        # img_tensor: (M, 1, Nz, N, N)
-        img_tensor = torch.transpose(img_tensor[:,0,:,:,:], 0, 1) # (Nz, M, N, N)
-
         i_d += 1
         del kernel_slice, slice_diff_tensor
+
+    # img_tensor: (M, 1, Nz, N, N)
+    img_tensor = torch.transpose(img_tensor[:,0,:,:,:], 0, 1) # (Nz, M, N, N)
 
     if reg_time > 0 and M > 1:
         # The intensity differences across times (Upwind / Forward)
@@ -579,40 +551,57 @@ def D_T_upwind(img, reg_z_over_reg = 1.0, reg_time = 0, return_pytorch_tensor = 
 
     D_T_img = torch.zeros([Nz, M, N, N]).cuda()
 
-    kernel_col = np.array([[1,-1]]).astype('float32')
-    kernel_col = torch.as_tensor(np.reshape(kernel_col, (1,1)+kernel_col.shape)).cuda()
-
-    kernel_row = np.array([[1],[-1]]).astype('float32')
-    kernel_row = torch.as_tensor(np.reshape(kernel_row, (1,1)+kernel_row.shape)).cuda()
-
     if type(img) != torch.Tensor:
         img = torch.as_tensor(img.astype('float32')).cuda()
 
-    # Forward row term
-    # D_T_img[:,:,1:-1,:-1] += img[:,0,:,:-2,:-1]-img[:,0,:,1:-1,:-1]
-    D_T_img[:,:,1:-1,:-1] += torch.nn.functional.conv2d(img[:,0,:,:-1,:-1], kernel_row, bias=None, stride=1, padding = 0)
-    D_T_img[:,:,0,:-1] += -img[:,0,:,0,:-1]
-    D_T_img[:,:,-1,:-1] += img[:,0,:,-2,:-1]
+    kernel_col = np.array([[[1,-1]]]).astype('float32')
+    kernel_col = torch.as_tensor(np.reshape(kernel_col, (1,1)+kernel_col.shape)).cuda()
 
-    # Forward col term
-    # D_T_img[:,:,:-1,1:-1] += img[:,1,:,:-1,:-2]-img[:,1,:,:-1,1:-1]
-    D_T_img[:,:,:-1,1:-1] += torch.nn.functional.conv2d(img[:,1,:,:-1,:-1], kernel_col, bias=None, stride=1, padding = 0)
-    D_T_img[:,:,:-1,0] += -img[:,1,:,:-1,0]
-    D_T_img[:,:,:-1,-1] += img[:,1,:,:-1,-2]
+    kernel_row = np.array([[[1],[-1]]]).astype('float32')
+    kernel_row = torch.as_tensor(np.reshape(kernel_row, (1,1)+kernel_row.shape)).cuda()
+
+    if Nz > 1:
+        # Forward row term
+        D_T_img[:-1,:,1:-1,:-1] += torch.nn.functional.conv3d(img[:-1,0:1,:,:-1,:-1], kernel_row, bias=None, stride=1, padding = 0)[:,0,:,:,:]
+        D_T_img[:-1,:,0,:-1] += -img[:-1,0,:,0,:-1]
+        D_T_img[:-1,:,-1,:-1] += img[:-1,0,:,-2,:-1]
+
+        # Forward col term
+        D_T_img[:-1,:,:-1,1:-1] += torch.nn.functional.conv3d(img[:-1,1:2,:,:-1,:-1], kernel_col, bias=None, stride=1, padding = 0)[:,0,:,:,:]
+        D_T_img[:-1,:,:-1,0] += -img[:-1,1,:,:-1,0]
+        D_T_img[:-1,:,:-1,-1] += img[:-1,1,:,:-1,-2]
+    else:
+        # Forward row term
+        # D_T_img[:,:,1:-1,:-1] += img[:,0,:,:-2,:-1]-img[:,0,:,1:-1,:-1] # Equivalent but 15-20% slower
+        # img tensor of size: (N,Cin,D,H,W), N: batch size, Cin: number of input channels.
+        D_T_img[:,:,1:-1,:-1] += torch.nn.functional.conv3d(img[:,0:1,:,:-1,:-1], kernel_row, bias=None, stride=1, padding = 0)[:,0,:,:,:]
+        D_T_img[:,:,0,:-1] += -img[:,0,:,0,:-1]
+        D_T_img[:,:,-1,:-1] += img[:,0,:,-2,:-1]
+
+        # Forward col term
+        # D_T_img[:,:,:-1,1:-1] += img[:,1,:,:-1,:-2]-img[:,1,:,:-1,1:-1] # Equivalent but 15-20% slower
+        D_T_img[:,:,:-1,1:-1] += torch.nn.functional.conv3d(img[:,1:2,:,:-1,:-1], kernel_col, bias=None, stride=1, padding = 0)[:,0,:,:,:]
+        D_T_img[:,:,:-1,0] += -img[:,1,:,:-1,0]
+        D_T_img[:,:,:-1,-1] += img[:,1,:,:-1,-2]
 
     i_d = 2
-    if Nz > 1 and reg_z_over_reg > 0: # z-terms
+    if Nz > 1 and reg_z_over_reg > 0:
         # Forward z term
-        D_T_img[1:-1,:,:,:] += np.sqrt(reg_z_over_reg) * (img[:-2,i_d,:,:,:]-img[1:-1,i_d,:,:,:])
-        D_T_img[0,:,:,:] += -np.sqrt(reg_z_over_reg) * img[0,i_d,:,:,:]
-        D_T_img[-1,:,:,:] += np.sqrt(reg_z_over_reg) * img[-2,i_d,:,:,:]
+        D_T_img[1:-1,:,:-1,:-1] += np.sqrt(reg_z_over_reg) * (img[:-2,i_d,:,:-1,:-1]-img[1:-1,i_d,:,:-1,:-1])
+        D_T_img[0,:,:-1,:-1] += -np.sqrt(reg_z_over_reg) * img[0,i_d,:,:-1,:-1]
+        D_T_img[-1,:,:-1,:-1] += np.sqrt(reg_z_over_reg) * img[-2,i_d,:,:-1,:-1]
         i_d += 1
 
     if reg_time > 0 and M > 1:
         # Forward time term
-        D_T_img[:,1:-1,:,:] += np.sqrt(reg_time) * (img[:,i_d,:-2,:,:]-img[:,i_d,1:-1,:,:])
-        D_T_img[:,0,:,:] += -np.sqrt(reg_time) * img[:,i_d,0,:,:]
-        D_T_img[:,-1,:,:] += np.sqrt(reg_time) * img[:,i_d,-2,:,:]
+        if Nz > 1:
+            D_T_img[:-1,1:-1,:-1,:-1] += np.sqrt(reg_time) * (img[:-1,i_d,:-2,:-1,:-1]-img[:-1,i_d,1:-1,:-1,:-1])
+            D_T_img[:-1,0,:-1,:-1] += -np.sqrt(reg_time) * img[:-1,i_d,0,:-1,:-1]
+            D_T_img[:-1,-1,:-1,:-1] += np.sqrt(reg_time) * img[:-1,i_d,-2,:-1,:-1]
+        else:
+            D_T_img[:,1:-1,:-1,:-1] += np.sqrt(reg_time) * (img[:,i_d,:-2,:-1,:-1]-img[:,i_d,1:-1,:-1,:-1])
+            D_T_img[:,0,:-1,:-1] += -np.sqrt(reg_time) * img[:,i_d,0,:-1,:-1]
+            D_T_img[:,-1,:-1,:-1] += np.sqrt(reg_time) * img[:,i_d,-2,:-1,:-1]
         i_d += 1
 
     del img, kernel_row, kernel_col
