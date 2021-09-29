@@ -273,33 +273,49 @@ def D_downwind(img, reg_z_over_reg = 1.0, reg_time = 0, return_pytorch_tensor = 
     kernel_row = np.array([[[1],[-1]]]).astype('float32')
     kernel_row = torch.as_tensor(np.reshape(kernel_row, (1,1)+kernel_row.shape)).cuda()
 
-    # img = np.reshape(img, (1,1)+img.shape).astype('float32')
-    img_tensor = torch.as_tensor(img.astype('float32')).cuda()
-    row_diff_tensor = (torch.zeros_like(img_tensor)).squeeze()
-    col_diff_tensor = (torch.zeros_like(img_tensor)).squeeze()
+    img = np.reshape(img, (1,)+img.shape).astype('float32')
+    img_tensor = torch.as_tensor(np.transpose(img.astype('float32'), [2, 0, 1, 3, 4])).cuda() # (M, 1, Nz, N, N)
+    row_diff_tensor = torch.zeros_like(img_tensor)
+    col_diff_tensor = torch.zeros_like(img_tensor)
 
-    # img_tensor of size: (N,Cin,H,W), N: batch size, Cin: number of input channels.
-    row_diff_tensor[:-1, :] = torch.nn.functional.conv2d(img_tensor, kernel_row, bias=None, stride=1, padding = 0).squeeze()
-    col_diff_tensor[:, :-1] = torch.nn.functional.conv2d(img_tensor, kernel_col, bias=None, stride=1, padding = 0).squeeze()
+    # img_tensor of size: (N,Cin,D,H,W), N: batch size, Cin: number of input channels.
+    row_diff_tensor[:, :, :, :-1, :] = torch.nn.functional.conv3d(img_tensor, kernel_row, bias=None, stride=1, padding = 0)
+    col_diff_tensor[:, :, :, :, :-1] = torch.nn.functional.conv3d(img_tensor, kernel_col, bias=None, stride=1, padding = 0)
 
-    row_diff_tensor[:,-1] = 0 # To match CPU explicit versions
-    col_diff_tensor[-1,:] = 0 # To match CPU explicit versions
+    # To match CPU explicit versions
+    row_diff_tensor[:, :, :, :, -1] = 0
+    col_diff_tensor[:, :, :, -1, :] = 0
 
-    # D_img[:,0,:,1:,1:-1] = img[:, :, :-1, 1:-1] - img[:, :, 1:, 1:-1]
-    D_img[:,0,:,1:,1:-1] = row_diff_tensor[:-1,1:-1]
+    if reg_z_over_reg > 0 and Nz > 1:
+        kernel_slice = np.array([[[1]],[[-1]]]).astype('float32')
+        kernel_slice = torch.as_tensor(np.reshape(kernel_slice, (1,1)+kernel_slice.shape)).cuda()
+        slice_diff_tensor = torch.zeros_like(img_tensor)
+        slice_diff_tensor[:, :, :-1, :, :] = torch.nn.functional.conv3d(img_tensor, kernel_slice, bias=None, stride=1, padding = 0)
+        slice_diff_tensor[:, :, -1, :, :] = 0
 
-    # D_img[:,1,:,1:-1,1:] = img[:,:, 1:-1, :-1] - img[:,:, 1:-1, 1:]
-    D_img[:,1,:,1:-1,1:] = col_diff_tensor[1:-1,:-1]
+    # Re-transpose to (Nz, M, N, N)
+    if Nz > 2:
+        D_img[1:-1, 0, :, 1:, 1:-1] = torch.transpose(row_diff_tensor[:, 0, 1:-1, :-1, 1:-1], 1, 0)
+        D_img[1:-1, 1, :, 1:-1, 1:] = torch.transpose(col_diff_tensor[:, 0, 1:-1, 1:-1, :-1], 1, 0)
+    else:
+        D_img[:, 0, :, 1:, 1:-1] = torch.transpose(row_diff_tensor[:, 0, :, :-1, 1:-1], 1, 0)
+        D_img[:, 1, :, 1:-1, 1:] = torch.transpose(col_diff_tensor[:, 0, :, 1:-1, :-1], 1, 0)
 
-    i_d = 2
-    if Nz > 1 and reg_z_over_reg > 0:
+    if reg_z_over_reg > 0 and Nz > 1:
         # The intensity differences across z (Downwind / Backward)
-        D_img[1:, i_d,:,:,:] = np.sqrt(reg_z_over_reg) * (img[:-1, :, :, :] - img[1:, :, :, :]) # The row_diff at the first z is 0
+        D_img[1:, i_d, :, 1:-1, 1:-1] = np.sqrt(reg_z_over_reg) * torch.transpose(slice_diff_tensor[:, 0, :-1, 1:-1, 1:-1], 1, 0) # The row_diff at the first z is 0
         i_d += 1
+        del kernel_slice, slice_diff_tensor
+
+    # img_tensor: (M, 1, Nz, N, N)
+    img_tensor = torch.transpose(img_tensor[:,0,:,:,:], 0, 1) # (Nz, M, N, N)
 
     if reg_time > 0 and M > 1:
-        # f^k-1 - f^k
-        D_img[:,i_d,1:,:,:] =  np.sqrt(reg_time) * (img[:,:-1,:,:] - img[:,1:,:,:])
+        # The intensity differences across times (Downwind / Backward)
+        if Nz > 2:
+            D_img[1:-1,i_d,1:,1:-1,1:-1] = np.sqrt(reg_time) * (img_tensor[1:-1,:-1,1:-1,1:-1] - img_tensor[1:-1,1:,1:-1,1:-1])
+        else:
+            D_img[:,i_d,1:,1:-1,1:-1] = np.sqrt(reg_time) * (img_tensor[:,:-1,1:-1,1:-1] - img_tensor[:,1:,1:-1,1:-1])
         i_d += 1
 
     del row_diff_tensor, col_diff_tensor, img_tensor, kernel_row, kernel_col
@@ -382,11 +398,9 @@ def D_upwind(img, reg_z_over_reg = 1.0, reg_time = 0, return_pytorch_tensor = Fa
             D_img[:-1, i_d, :-1, :-1, :-1] = np.sqrt(reg_time) * (img_tensor[:-1, 1:, :-1, :-1] - img_tensor[:-1, :-1, :-1, :-1])
         else:
             D_img[:, i_d, :-1, :-1, :-1] = np.sqrt(reg_time) * (img_tensor[:, 1:, :-1, :-1] - img_tensor[:, :-1, :-1, :-1])
-
         i_d += 1
 
     del row_diff_tensor, col_diff_tensor, img_tensor, kernel_row, kernel_col
-
     if not return_pytorch_tensor:
         D_img2 = D_img.cpu().detach().numpy()
         del D_img
