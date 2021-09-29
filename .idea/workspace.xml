@@ -88,7 +88,7 @@
       <option name="presentableId" value="Default" />
       <updated>1632755667177</updated>
       <workItem from="1632756355518" duration="27377000" />
-      <workItem from="1632849667800" duration="17956000" />
+      <workItem from="1632849667800" duration="20272000" />
     </task>
     <task id="LOCAL-00001" summary="Update README.md">
       <created>1632755700529</created>
@@ -153,7 +153,14 @@
       <option name="project" value="LOCAL" />
       <updated>1632875497997</updated>
     </task>
-    <option name="localTasksCounter" value="10" />
+    <task id="LOCAL-00010" summary="Implemented 3D TV operator GPU: D for downwind">
+      <created>1632878277853</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1632878277853</updated>
+    </task>
+    <option name="localTasksCounter" value="11" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -168,6 +175,7 @@
     <MESSAGE value="Implemented 3D TV operator GPU: D for upwind" />
     <MESSAGE value="Implemented 3D TV operator GPU: D_T for upwind" />
     <MESSAGE value="Implemented 3D TV operator GPU: D_T for upwind, check convolution option for reg_z" />
-    <option name="LAST_COMMIT_MESSAGE" value="Implemented 3D TV operator GPU: D_T for upwind, check convolution option for reg_z" />
+    <MESSAGE value="Implemented 3D TV operator GPU: D for downwind" />
+    <option name="LAST_COMMIT_MESSAGE" value="Implemented 3D TV operator GPU: D for downwind" />
   </component>
 </project>
