@@ -263,13 +263,15 @@ def D_downwind(img, reg_z_over_reg = 1.0, reg_time = 0, return_pytorch_tensor = 
         N_d += 1
     if reg_time > 0 and M > 1:
         N_d += 1
+    i_d = 2
+
     D_img = torch.zeros([Nz, N_d, M, N, N])
 
-    kernel_col = np.array([[1,-1]]).astype('float32')
-    kernel_col =  torch.as_tensor(np.reshape(kernel_col, (1,1)+kernel_col.shape)).cuda()
+    kernel_col = np.array([[[1,-1]]]).astype('float32')
+    kernel_col = torch.as_tensor(np.reshape(kernel_col, (1,1)+kernel_col.shape)).cuda()
 
-    kernel_row = np.array([[1],[-1]]).astype('float32')
-    kernel_row =  torch.as_tensor(np.reshape(kernel_row, (1,1)+kernel_row.shape)).cuda()
+    kernel_row = np.array([[[1],[-1]]]).astype('float32')
+    kernel_row = torch.as_tensor(np.reshape(kernel_row, (1,1)+kernel_row.shape)).cuda()
 
     # img = np.reshape(img, (1,1)+img.shape).astype('float32')
     img_tensor = torch.as_tensor(img.astype('float32')).cuda()
@@ -586,11 +588,21 @@ def D_T_upwind(img, reg_z_over_reg = 1.0, reg_time = 0, return_pytorch_tensor = 
 
     i_d = 2
     if Nz > 1 and reg_z_over_reg > 0:
+
         # Forward z term
-        D_T_img[1:-1,:,:-1,:-1] += np.sqrt(reg_z_over_reg) * (img[:-2,i_d,:,:-1,:-1]-img[1:-1,i_d,:,:-1,:-1])
+        # kernel_slice = np.array([[[1]],[[-1]]]).astype('float32')
+        # kernel_slice = torch.as_tensor(np.reshape(kernel_slice, (1,1)+kernel_slice.shape)).cuda()
+        # img = torch.transpose(img, 0, 2) # (Nz, Nd, M, N, N) -> (M, Nd, Nz, N, N)
+        # D_T_img[1:-1,:,:-1,:-1] += torch.transpose(np.sqrt(reg_z_over_reg) * torch.nn.functional.conv3d(img[:,i_d:i_d+1,:-1,:-1,:-1], kernel_slice, bias=None, stride=1, padding = 0)[:,0,:,:,:], 0, 1)
+        # img = torch.transpose(img, 0, 2) # (M, 1, Nz, N, N)
+
+        D_T_img[1:-1,:,:-1,:-1] += np.sqrt(reg_z_over_reg) * (img[:-2,i_d,:,:-1,:-1]-img[1:-1,i_d,:,:-1,:-1]) # Equivalent to above convolution, and similar computational cost
         D_T_img[0,:,:-1,:-1] += -np.sqrt(reg_z_over_reg) * img[0,i_d,:,:-1,:-1]
         D_T_img[-1,:,:-1,:-1] += np.sqrt(reg_z_over_reg) * img[-2,i_d,:,:-1,:-1]
+
         i_d += 1
+
+        del kernel_slice
 
     if reg_time > 0 and M > 1:
         # Forward time term
