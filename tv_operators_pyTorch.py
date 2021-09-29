@@ -172,83 +172,95 @@ def D_T_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, halve_tv_at_both_end = F
     if reg_z_over_reg == np.nan:
         reg_z_over_reg = 0.0
 
-#     if img.shape[0] == 4 and len(img.shape) == 3:
-#         img = np.reshape(img, [1, img.shape[0], img.shape[1], img.shape[2]])
-#     if img.shape[0] == 6 and len(img.shape) == 4:
-#         img = np.reshape(img, [1, img.shape[0], img.shape[1], img.shape[2], img.shape[3]])
-
     Nz = img.shape[0]
     N_d = img.shape[1]
-    N = img.shape[-1]
     M = img.shape[2]
+    N = img.shape[-1]
 
     D_T_img = torch.zeros([Nz, M, N, N]).cuda()
 
-    kernel_col = np.array([[1,-1]]).astype('float32')
-    kernel_col = torch.as_tensor(np.reshape(kernel_col, (1,1)+kernel_col.shape)).cuda()
-
-    kernel_row = np.array([[1],[-1]]).astype('float32')
-    kernel_row = torch.as_tensor(np.reshape(kernel_row, (1,1)+kernel_row.shape)).cuda()
-
     if type(img) != torch.Tensor:
         img = torch.as_tensor(img.astype('float32')).cuda()
+
+    kernel_col = np.array([[[1,-1]]]).astype('float32')
+    kernel_col = torch.as_tensor(np.reshape(kernel_col, (1,1)+kernel_col.shape)).cuda()
+
+    kernel_row = np.array([[[1],[-1]]]).astype('float32')
+    kernel_row = torch.as_tensor(np.reshape(kernel_row, (1,1)+kernel_row.shape)).cuda()
 
     if halve_tv_at_both_end and M > 2:
         img = img.copy()
         img[:,:,0,:,:] /= 2.0
         img[:,:,-1,:,:] /= 2.0
 
-    # Forward row term
-    # D_T_img[:,:,1:-1,:-1] += img[:,0,:,:-2,:-1]-img[:,0,:,1:-1,:-1]
-    D_T_img[:,:,1:-1,:-1] += torch.nn.functional.conv2d(img[:,0,:,:-1,:-1], kernel_row, bias=None, stride=1, padding = 0)
-    D_T_img[:,:,0,:-1] += -img[:,0,:,0,:-1]
-    D_T_img[:,:,-1,:-1] += img[:,0,:,-2,:-1]
+    if Nz > 1:
+        # Forward row term
+        D_T_img[:-1,:,1:-1,:-1] += torch.nn.functional.conv3d(img[:-1,0:1,:,:-1,:-1], kernel_row, bias=None, stride=1, padding = 0)[:,0,:,:,:]
+        D_T_img[:-1,:,0,:-1] += -img[:-1,0,:,0,:-1]
+        D_T_img[:-1,:,-1,:-1] += img[:-1,0,:,-2,:-1]
 
-    # Forward col term
-    # D_T_img[:,:,:-1,1:-1] += img[:,1,:,:-1,:-2]-img[:,1,:,:-1,1:-1]
-    D_T_img[:,:,:-1,1:-1] += torch.nn.functional.conv2d(img[:,1,:,:-1,:-1], kernel_col, bias=None, stride=1, padding = 0)
-    D_T_img[:,:,:-1,0] += -img[:,1,:,:-1,0]
-    D_T_img[:,:,:-1,-1] += img[:,1,:,:-1,-2]
+        # Forward col term
+        D_T_img[:-1,:,:-1,1:-1] += torch.nn.functional.conv3d(img[:-1,1:2,:,:-1,:-1], kernel_col, bias=None, stride=1, padding = 0)[:,0,:,:,:]
+        D_T_img[:-1,:,:-1,0] += -img[:-1,1,:,:-1,0]
+        D_T_img[:-1,:,:-1,-1] += img[:-1,1,:,:-1,-2]
 
-    # Backward row term
-    # D_T_img[:,:,1:-1,1:-1] += img[:,2,:,1:-1,:-2] - img[:,2,:,:-2,:-2]
-    D_T_img[:,:,1:-1,1:-1] += -torch.nn.functional.conv2d(img[:,2,:,:-1,:-2], kernel_row, bias=None, stride=1, padding = 0)
-    D_T_img[:,:,0,1:-1] += img[:,2,:,0,:-2]
-    D_T_img[:,:,-1,1:-1] += -img[:,2,:,-2,:-2]
+        # Backward row term
+        D_T_img[1:-1,:,1:-1,1:-1] += -torch.nn.functional.conv3d(img[:-2,2:3,:,:-1,:-2], kernel_row, bias=None, stride=1, padding = 0)[:,0,:,:,:]
+        D_T_img[1:-1,:,0,1:-1] += img[:-2,2,:,0,:-2]
+        D_T_img[1:-1,:,-1,1:-1] += -img[:-2,2,:,-2,:-2]
 
-    # Backward col term
-    # D_T_img[:,:,1:-1,1:-1] += img[:,3,:,:-2,1:-1] - img[:,3,:,:-2,:-2]
-    D_T_img[:,:,1:-1,1:-1] += -torch.nn.functional.conv2d(img[:,3,:,:-2,:-1], kernel_col, bias=None, stride=1, padding = 0)
-    D_T_img[:,:,1:-1,0] += img[:,3,:,:-2,0]
-    D_T_img[:,:,1:-1,-1] += - img[:,3,:,:-2,-2]
+        # Backward col term
+        D_T_img[1:-1,:,1:-1,1:-1] += -torch.nn.functional.conv3d(img[:-2,3:4,:,:-2,:-1], kernel_col, bias=None, stride=1, padding = 0)[:,0,:,:,:]
+        D_T_img[1:-1,:,1:-1,0] += img[:-2,3,:,:-2,0]
+        D_T_img[1:-1,:,1:-1,-1] += - img[:-2,3,:,:-2,-2]
+    else:
+        # Forward row term
+        D_T_img[:,:,1:-1,:-1] += torch.nn.functional.conv3d(img[:,0:1,:,:-1,:-1], kernel_row, bias=None, stride=1, padding = 0)[:,0,:,:,:]
+        D_T_img[:,:,0,:-1] += -img[:,0,:,0,:-1]
+        D_T_img[:,:,-1,:-1] += img[:,0,:,-2,:-1]
+
+        # Forward col term
+        D_T_img[:,:,:-1,1:-1] += torch.nn.functional.conv3d(img[:,1:2,:,:-1,:-1], kernel_col, bias=None, stride=1, padding = 0)[:,0,:,:,:]
+        D_T_img[:,:,:-1,0] += -img[:,1,:,:-1,0]
+        D_T_img[:,:,:-1,-1] += img[:,1,:,:-1,-2]
+
+        # Backward row term
+        D_T_img[:,:,1:-1,1:-1] += -torch.nn.functional.conv3d(img[:,2:3,:,:-1,:-2], kernel_row, bias=None, stride=1, padding = 0)[:,0,:,:,:]
+        D_T_img[:,:,0,1:-1] += img[:,2,:,0,:-2]
+        D_T_img[:,:,-1,1:-1] += -img[:,2,:,-2,:-2]
+
+        # Backward col term
+        D_T_img[:,:,1:-1,1:-1] += -torch.nn.functional.conv3d(img[:,3:4,:,:-2,:-1], kernel_col, bias=None, stride=1, padding = 0)[:,0,:,:,:]
+        D_T_img[:,:,1:-1,0] += img[:,3,:,:-2,0]
+        D_T_img[:,:,1:-1,-1] += - img[:,3,:,:-2,-2]
 
     i_d = 4
-    if Nz > 1 and reg_z_over_reg > 0: # z-terms
+    if Nz > 1 and reg_z_over_reg > 0:
         # Forward z term
-        D_T_img[1:-1,:,:,:] += np.sqrt(reg_z_over_reg) * (img[:-2,i_d,:,:,:]-img[1:-1,i_d,:,:,:])
-        D_T_img[0,:,:,:] += -np.sqrt(reg_z_over_reg) * img[0,i_d,:,:,:]
-        D_T_img[-1,:,:,:] += np.sqrt(reg_z_over_reg) * img[-2,i_d,:,:,:]
+        D_T_img[1:-1,:,:-1,:-1] += np.sqrt(reg_z_over_reg) * (img[:-2,i_d,:,:-1,:-1]-img[1:-1,i_d,:,:-1,:-1])
+        D_T_img[0,:,:-1,:-1] += -np.sqrt(reg_z_over_reg) * img[0,i_d,:,:-1,:-1]
+        D_T_img[-1,:,:-1,:-1] += np.sqrt(reg_z_over_reg) * img[-2,i_d,:,:-1,:-1]
         i_d += 1
 
-        # Backward z term
-        D_T_img[1:-1,:,:,:] += np.sqrt(reg_z_over_reg) * (img[2:,i_d,:,:,:] - img[1:-1,i_d,:,:,:])
-        D_T_img[0,:,:,:] += np.sqrt(reg_z_over_reg) * img[1,i_d,:,:,:]
-        D_T_img[-1,:,:,:] += -np.sqrt(reg_z_over_reg) * img[-1,i_d,:,:,:]
+        # # Backward z term
+        D_T_img[1:-1,:,1:-1,1:-1] += np.sqrt(reg_z_over_reg) * (img[1:-1,i_d,:,:-2,:-2] - img[:-2,i_d,:,:-2,:-2])
+        D_T_img[0,:,1:-1,1:-1] += np.sqrt(reg_z_over_reg) * img[0,i_d,:,:-2,:-2]
+        D_T_img[-1,:,1:-1,1:-1] += -np.sqrt(reg_z_over_reg) * img[-2,i_d,:,:-2,:-2]
         i_d += 1
 
     if reg_time > 0 and M > 1:
-        D_T_img_time_update = np.zeros_like(D_T_img)
+        D_T_img_time_update = torch.zeros_like(D_T_img)
 
         # Forward time term
-        D_T_img_time_update[:,1:-1,:,:] += np.sqrt(reg_time) * (img[:,i_d,:-2,:,:]-img[:,i_d,1:-1,:,:])
-        D_T_img_time_update[:,0,:,:] += -np.sqrt(reg_time) * img[:,i_d,0,:,:]
-        D_T_img_time_update[:,-1,:,:] += np.sqrt(reg_time) * img[:,i_d,-2,:,:]
+        D_T_img_time_update[:,1:-1,:-1,:-1] += np.sqrt(reg_time) * (img[:,i_d,:-2,:-1,:-1]-img[:,i_d,1:-1,:-1,:-1])
+        D_T_img_time_update[:,0,:-1,:-1] += -np.sqrt(reg_time) * img[:,i_d,0,:-1,:-1]
+        D_T_img_time_update[:,-1,:-1,:-1] += np.sqrt(reg_time) * img[:,i_d,-2,:-1,:-1]
         i_d += 1
 
         # Backward time term
-        D_T_img_time_update[:,1:-1,:,:] += np.sqrt(reg_time) * (img[:,i_d,2:,:,:] - img[:,i_d,1:-1,:,:])
-        D_T_img_time_update[:,0,:,:] += np.sqrt(reg_time) * img[:,i_d,1,:,:]
-        D_T_img_time_update[:,-1,:,:] += -np.sqrt(reg_time) * img[:,i_d,-1,:,:]
+        D_T_img_time_update[:,1:-1,1:-1,1:-1] += np.sqrt(reg_time) * (img[:,i_d,1:-1,:-2,:-2] - img[:,i_d,:-2,:-2,:-2])
+        D_T_img_time_update[:,0,1:-1,1:-1] += np.sqrt(reg_time) * img[:,i_d,0,:-2,:-2]
+        D_T_img_time_update[:,-1,1:-1,1:-1] += -np.sqrt(reg_time) * img[:,i_d,-2,:-2,:-2]
         i_d += 1
 
         if isinstance(mask_static, np.ndarray):
@@ -256,6 +268,7 @@ def D_T_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, halve_tv_at_both_end = F
             D_T_img_time_update[mask_static] *= np.sqrt(factor_reg_static)
 
         D_T_img += D_T_img_time_update
+        del D_T_img_time_update
 
     del img, kernel_row, kernel_col
 
