@@ -9,11 +9,17 @@ A set of Python routines to compute the Total Variation (TV) of 2D and 3D images
 - Efficient GPU implementations using PyTorch tensors and convolution kernels.
 - Operator-form implementation compatible with primal-dual and  formulations.
 
-# Example
+# Installation
+
+The pytv files can be downloaded directly from this Github repository, or installed as a package using anaconda:  
+
+`conda install -c eboigne pytv`
+
+# Getting started
 
 `import PyTV as tv`
 
-# Choice of gradient discretization
+# TV Gradient discretization
 
 
 # Comments
