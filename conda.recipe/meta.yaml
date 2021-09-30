@@ -1,0 +1,44 @@
+{% set data = load_setup_py_data() %}
+
+package:
+  name: pytv
+  version: {{ data['version'] }}
+
+source:
+  path: ..
+
+build:
+  script: {{ PYTHON }} -m pip install --no-deps --ignore-installed -vv .
+  noarch: python
+  
+  # entry_points:
+  #   {% for entry in data['entry_points']['console_scripts'] %}
+  #     - {{ entry.split('=')[0].strip() }} = {{ entry.split('=')[1].strip() }}
+  #   {% endfor %}
+  
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    # dependencies are defined in setup.py
+    {% for dep in data['install_requires'] %}
+    - {{ dep.lower() }}
+    {% endfor %}
+
+test:
+  source_files: # Location of tests files
+    - tests
+  requires: # Added dependencies on top of requirements:run ones
+    - pytest
+    - pytest-cov
+  commands: # Commands ran to test. 
+    - pytest # The pytest program will run all files *_test. py and test_*.py
+
+about:
+  home: https://github.com/eboigne/PyTV
+  summary: A set of Python routines to compute the Total Variation (TV) of 2D and 3D images on CPU & GPU, in application to iterative Computed Tomography (CT) reconstructions. 
+  license: {{ data.get('license') }}
+  license_file: LICENSE
