@@ -118,7 +118,8 @@ plt.show()
 [comment]: <> (![plot]&#40;./pytv/media/img_denoising_loss_fct.png&#41;)
 
 <p align="center">
-  <img src="https://github.com/waldyr/Sublime-Installer/blob/master/sublime_text.png?raw=true" alt="Sublime's custom image"/>
+  <img src="https://raw.githubusercontent.com/eboigne/PyTV/main/pytv/media/img_denoising_Lenna.png" alt="Images of Lenna"/>
+<img src="https://raw.githubusercontent.com/eboigne/PyTV/main/pytv/media/img_denoising_loss_fct.png" alt="Loss function"/>
 </p>
 
 
