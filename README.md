@@ -71,8 +71,11 @@ Sub-gradients from CPU and GPU are equal: True
 A simple example of image denoizing using the total variation. The following loss function is minimized:
 
 <p align="center">
-<img src="https://latex.codecogs.com/svg.latex?\Large&space;\frac{1}{2}||x-x_0||_2^2+\lambda\text{TV}(x)"/>
+<img src="https://latex.codecogs.com/svg.latex?{\color{Gray}\Large&space;\frac{1}{2}||x-x_0||_2^2+\lambda\text{TV}(x)}"/>
 </p>
+
+where <img src="https://latex.codecogs.com/svg.latex?{\color{Gray}\Large&space;x"/> is the current image, <img src="https://latex.codecogs.com/svg.latex?{\color{Gray}\Large&space;x_0"/> is the input noisy image, and <img src="https://latex.codecogs.com/svg.latex?{\color{Gray}\Large&space;\lambda"/> is a regularization parameter.
+Because the TV is not everywhere differentiable, the sub-gradient descent method is used to minimize this loss function:
 
 ```
 import matplotlib.pyplot as plt
