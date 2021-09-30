@@ -68,7 +68,11 @@ Sub-gradients from CPU and GPU are equal: True
 
 ### Denoizing an image
 
-A simple example that minimizes the 
+A simple example of image denoizing using the total variation. The following loss function is minimized:
+
+<p align="center">
+<img src="https://latex.codecogs.com/svg.latex?\Large&space;\frac{1}{2}||x-x_0||_2^2+\lambda\text{TV}(x)"/>
+</p>
 
 ```
 import matplotlib.pyplot as plt
@@ -113,12 +117,8 @@ plt.tight_layout(pad=0.5)
 plt.show()
 ```
 
-[comment]: <> (![plot]&#40;./pytv/media/img_denoising_Lenna.png&#41;)
-
-[comment]: <> (![plot]&#40;./pytv/media/img_denoising_loss_fct.png&#41;)
-
 <p align="center">
-  <img src="https://raw.githubusercontent.com/eboigne/PyTV/main/pytv/media/img_denoising_Lenna.png" alt="Images of Lenna"/>
+<img src="https://raw.githubusercontent.com/eboigne/PyTV/main/pytv/media/img_denoising_Lenna.png" alt="Images of Lenna"/>
 <img src="https://raw.githubusercontent.com/eboigne/PyTV/main/pytv/media/img_denoising_loss_fct.png" alt="Loss function"/>
 </p>
 
