@@ -11,13 +11,40 @@ A set of Python routines to compute the Total Variation (TV) of 2D and 3D images
 
 # Installation
 
-The pytv files can be downloaded directly from this Github repository, or installed as a package using anaconda:  
+Install PyTorch following the guidelines on the official website: https://pytorch.org/. Make sure to install the correct version for your setup to enable GPU computations.  
+
+Then, the PyTV files can be downloaded directly from the Github repository, or installed as a package using anaconda:  
 
 `conda install -c eboigne pytv`
 
 # Getting started
 
-`import PyTV as tv`
+Below is a simple example to compute the total variation and sub-gradient on CPU and GPU:
+
+```
+import pytv  
+import numpy as np
+
+Nz, N = 20, 1000 # 3D Image dimensions
+np.random.seed(0)
+img = np.random.rand(Nz, N, N)
+
+tv1, G1 = pytv.tv.tv_hybrid(img)
+tv2, G2 = pytv.tv_pyTorch.tv_hybrid(img)
+
+print('TV value from CPU: '+str(tv1))
+print('TV value from GPU: '+str(tv2))
+print('Sub-gradients from CPU and GPU are equal: '+str(np.prod(np.abs(G1-G2)<1e-5)>0))
+```
+
+Output is:
+
+```
+TV value from CPU: 12763241.060426874
+TV value from GPU: 12763241.0
+Sub-gradients from CPU and GPU are equal: True
+```
+
 
 # TV Gradient discretization
 

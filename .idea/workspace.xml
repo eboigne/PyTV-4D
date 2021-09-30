@@ -2,7 +2,13 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d4674d05-ba59-43d3-a3eb-732862d17c2d" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/tests/import.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_setup.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/conda.recipe/meta.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/conda.recipe/meta.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/setup.py" beforeDir="false" afterPath="$PROJECT_DIR$/setup.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_import.py" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -86,7 +92,7 @@
       <option name="presentableId" value="Default" />
       <updated>1632755667177</updated>
       <workItem from="1632756355518" duration="27377000" />
-      <workItem from="1632849667800" duration="31388000" />
+      <workItem from="1632849667800" duration="33568000" />
     </task>
     <task id="LOCAL-00001" summary="Update README.md">
       <created>1632755700529</created>
@@ -200,7 +206,14 @@
       <option name="project" value="LOCAL" />
       <updated>1632959596252</updated>
     </task>
-    <option name="localTasksCounter" value="17" />
+    <task id="LOCAL-00017" summary="Setup as conda package">
+      <created>1632961557193</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1632961557193</updated>
+    </task>
+    <option name="localTasksCounter" value="18" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

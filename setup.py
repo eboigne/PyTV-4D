@@ -2,7 +2,7 @@ from setuptools import setup
 
 requirements = [
 	'numpy',
-	'pytorch'
+	'pytorch>=1.5.0'
 ]
 
 setup(
@@ -16,9 +16,4 @@ setup(
     packages=['pytv'],
     install_requires=requirements,
     keywords='pytv',
-    classifiers=[
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
-    ]
 )
