@@ -12,6 +12,12 @@ A set of Python routines to compute the Total Variation (TV) of 2D, 3D and 4D im
 # TV definition
 
 
+<p align="center">
+<img src="https://raw.githubusercontent.com/eboigne/PyTV/main/pytv/media/TV_def.png" alt="Images of the cameraman"/>
+<img src="https://raw.githubusercontent.com/eboigne/PyTV/main/pytv/media/TV_table.png" alt="Loss function"/>
+</p>
+
+
 
 # Installation
 
