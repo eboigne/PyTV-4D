@@ -1,2 +1,4 @@
 include pytv/media/cameraman.npy
 include pytv/media/cameraman.png
+include math_and_2Dexample.ipynb
+include tests/*
