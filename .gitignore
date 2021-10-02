@@ -1,3 +1,4 @@
 .pytest_cache
 .ipynb_checkpoints
 .cache
+__pycache__
