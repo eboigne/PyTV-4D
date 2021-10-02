@@ -4,10 +4,14 @@ A set of Python routines to compute the Total Variation (TV) of 2D, 3D and 4D im
 # Current features
 
 - Explicit functions to compute the total variation of 2D & 3D images.
-- Functions provide subgradients for easy implementation of gradient descent.
-- Different spatial discretization schemes available: upwind, downwind, centered, and hybrid.
+- Functions provide subgradients for easy implementation of (sub)-gradient descent.
 - Efficient GPU implementations using PyTorch tensors and convolution kernels.
-- Operator-form implementation compatible with primal-dual and  formulations.
+- Operator-form implementation compatible with primal-dual and proximal formulations.
+- Four different spatial discretization schemes are available: upwind, downwind, centered, and hybrid.
+
+# TV definition
+
+
 
 # Installation
 
@@ -32,9 +36,11 @@ Once installed, you can run some basic tests on CPU and GPU:
 ```
 import pytv
 
-assert(pytv.run_CPU_tests())
-assert(pytv.run_GPU_tests())
+pytv.run_CPU_tests()
+pytv.run_GPU_tests()
 ```
+
+Note that the tests may fail because of bad rng, so try running it a couple times.
 
 # Getting started
 
@@ -68,7 +74,7 @@ Sub-gradients from CPU and GPU are equal: True
 
 ### Denoizing an image
 
-A simple example of image denoizing using the total variation on [Lenna's picture](https://en.wikipedia.org/wiki/Lenna). The following loss function is minimized:
+A simple example of image denoizing using the total variation. The following loss function is minimized:
 
 <p align="center">
 <img src="https://latex.codecogs.com/svg.latex?{\color{Gray}\Large&space;\frac{1}{2}||x-x_0||_2^2+\lambda\text{TV}(x)}"/>
@@ -80,39 +86,34 @@ Because the TV is not everywhere differentiable, the sub-gradient descent method
 ```
 import matplotlib.pyplot as plt
 
-# Parameters
-noise_level = 0.5
+noise_level = 100
 nb_it = 150
-regularization = 2e-1
+regularization = 25
 step_size = 5e-3 # If step size is too large, loss function may not decrease at every step
 
-# Open Lenna's grayscale image and add some noise
-lenna_truth = pytv.utils.lenna() 
-lenna_noisy = lenna_truth + noise_level * np.random.rand(*lenna_truth.shape)
-lenna_estimate = np.copy(lenna_noisy)
+cameraman_truth = pytv.utils.cameraman() # Open the cameraman's grayscale image
+cameraman_noisy = cameraman_truth + noise_level * np.random.rand(*cameraman_truth.shape) # Add noise
+cameraman_estimate = np.copy(cameraman_noisy)
 
-# A simple sub-gradient descent algorithm for image denoising
 loss_fct = np.zeros([nb_it,])
-for it in range(nb_it): 
-    tv, G = pytv.tv.tv_centered(lenna_estimate)
-    lenna_estimate += - step_size * ((lenna_estimate - lenna_noisy) + regularization * G)
-    loss_fct[it] = 0.5 * np.sum(np.square(lenna_estimate - lenna_noisy)) + regularization * tv
+for it in range(nb_it): # A simple sub-gradient descent algorithm for image denoising
+    tv, G = pytv.tv.tv_hybrid(cameraman_estimate)
+    cameraman_estimate += - step_size * ((cameraman_estimate - cameraman_noisy) + regularization * G)
+    loss_fct[it] = 0.5 * np.sum(np.square(cameraman_estimate - cameraman_noisy)) + regularization * tv
 
-# Plot the Lenna images
-plt.figure(1, figsize=[10, 3], dpi = 150)
+plt.figure(1, figsize=[9.5, 3], dpi = 150)
 plt.subplot(1,3,1, title='Truth (no noise)')
-plt.imshow(lenna_truth, cmap = plt.get_cmap('gray'))
+plt.imshow(cameraman_truth, cmap = plt.get_cmap('gray'))
 plt.axis('off')
 plt.subplot(1,3,2, title='Noisy input')
 plt.axis('off')
-plt.imshow(lenna_noisy, cmap = plt.get_cmap('gray'))
+plt.imshow(cameraman_noisy, cmap = plt.get_cmap('gray'))
 plt.subplot(1,3,3, title='Algorithm output')
-plt.imshow(lenna_estimate, cmap = plt.get_cmap('gray'))
+plt.imshow(cameraman_estimate, cmap = plt.get_cmap('gray'))
 plt.axis('off')
 plt.tight_layout(pad=0.5)
 
-# Plot the loss function
-plt.figure(2, figsize=[6, 4], dpi = 75)
+plt.figure(2, figsize=[3, 2], dpi = 75)
 plt.plot(loss_fct)
 plt.xlabel('Iteration')
 plt.ylabel('Loss function')
@@ -126,7 +127,6 @@ plt.show()
 </p>
 
 
-# TV Gradient discretization
 
 
 # Comments

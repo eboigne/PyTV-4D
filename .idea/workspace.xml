@@ -2,20 +2,22 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d4674d05-ba59-43d3-a3eb-732862d17c2d" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/../PhD/Python/cantera/.ipynb_checkpoints/cantera_soundspeed-checkpoint.ipynb" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../PhD/Python/cantera/.ipynb_checkpoints/pore_scale_2D-checkpoint.ipynb" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../PhD/Python/cantera/pore_scale_2D.ipynb" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/pytv/media/cameraman.npy" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/pytv/media/cameraman.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/pytv/media/img_denoising_cameraman.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../PhD/Python/cantera/cantera_soundspeed.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/../PhD/Python/cantera/cantera_soundspeed.ipynb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/math_and_2Dexample.ipynb" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pytv/media/Lenna.npy" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pytv/media/img_denoising_Lenna.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pytv/media/img_denoising_loss_fct.png" beforeDir="false" afterPath="$PROJECT_DIR$/pytv/media/img_denoising_loss_fct.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pytv/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/pytv/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pytv/tests.py" beforeDir="false" afterPath="$PROJECT_DIR$/pytv/tests.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pytv/tv.py" beforeDir="false" afterPath="$PROJECT_DIR$/pytv/tv_CPU.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pytv/tv_2d.py" beforeDir="false" afterPath="$PROJECT_DIR$/pytv/tv_2d_CPU.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pytv/tv_operators.py" beforeDir="false" afterPath="$PROJECT_DIR$/pytv/tv_operators_CPU.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pytv/tv_operators_pyTorch.py" beforeDir="false" afterPath="$PROJECT_DIR$/pytv/tv_operators_GPU.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pytv/tv_pyTorch.py" beforeDir="false" afterPath="$PROJECT_DIR$/pytv/tv_GPU.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pytv/tv_pyTorch_2d.py" beforeDir="false" afterPath="$PROJECT_DIR$/pytv/tv_2d_GPU.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/pytv/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/pytv/utils.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test.py" beforeDir="false" afterPath="$PROJECT_DIR$/test.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sample.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/test.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_cameraman.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/import.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_setup.py" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -76,6 +78,7 @@
       <recent name="$PROJECT_DIR$" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/tests" />
       <recent name="$PROJECT_DIR$" />
     </key>
   </component>
@@ -112,7 +115,7 @@
       <option name="presentableId" value="Default" />
       <updated>1632755667177</updated>
       <workItem from="1632756355518" duration="27377000" />
-      <workItem from="1632849667800" duration="43460000" />
+      <workItem from="1632849667800" duration="59468000" />
     </task>
     <task id="LOCAL-00001" summary="Update README.md">
       <created>1632755700529</created>
@@ -268,7 +271,14 @@
       <option name="project" value="LOCAL" />
       <updated>1632976439715</updated>
     </task>
-    <option name="localTasksCounter" value="23" />
+    <task id="LOCAL-00023" summary="Update cameraman example">
+      <created>1633131199913</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1633131199913</updated>
+    </task>
+    <option name="localTasksCounter" value="24" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -292,6 +302,7 @@
     <MESSAGE value="Implemented 3D TV operator GPU: D_T for hybrid" />
     <MESSAGE value="Setup as conda package" />
     <MESSAGE value="Update README" />
-    <option name="LAST_COMMIT_MESSAGE" value="Update README" />
+    <MESSAGE value="Update cameraman example" />
+    <option name="LAST_COMMIT_MESSAGE" value="Update cameraman example" />
   </component>
 </project>

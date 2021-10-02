@@ -1,16 +1,16 @@
 import numpy as np
 import torch
-import pytv.tv_pyTorch_2d
+import pytv.tv_2d_GPU
 
-def tv_centered(img, mask = []):
+def tv_centered(img, mask = [], reg_z_over_reg = 1.0):
 
     if mask != []:
         img[~mask] = 0
 
     if len(img) == 2:
-        return(pytv.tv_pyTorch_2d.tv_centered(img))
+        return(pytv.tv_2d_GPU.tv_centered(img))
     elif (len(img.shape) == 3 and img.shape[0] < 3):
-        return(pytv.tv_pyTorch_2d.tv_centered(img[0]))
+        return(pytv.tv_2d_GPU.tv_centered(img[0]))
 
     kernel_row = np.array([[[-0.5], [0], [0.5]]]).astype('float32')
     kernel_row = torch.as_tensor(np.reshape(kernel_row, (1,1)+kernel_row.shape)).cuda()
@@ -29,7 +29,7 @@ def tv_centered(img, mask = []):
 
     row_diff_tensor[:, 1:-1, :] = torch.nn.functional.conv3d(img_tensor, kernel_row, bias=None, stride=1, padding = 0).squeeze()
     col_diff_tensor[:, :, 1:-1] = torch.nn.functional.conv3d(img_tensor, kernel_col, bias=None, stride=1, padding = 0).squeeze()
-    slice_diff_tensor[1:-1, :, :] = torch.nn.functional.conv3d(img_tensor, kernel_slice, bias=None, stride=1, padding = 0).squeeze()
+    slice_diff_tensor[1:-1, :, :] = np.sqrt(reg_z_over_reg) * torch.nn.functional.conv3d(img_tensor, kernel_slice, bias=None, stride=1, padding = 0).squeeze()
 
     # row_diff_tensor[:,[0, -1]] = 0 # To match CPU explicit versions
     # col_diff_tensor[[0,-1],:] = 0 # To match CPU explicit versions
@@ -61,15 +61,15 @@ def tv_centered(img, mask = []):
 
     return (tv, G_cpu)
 
-def tv_hybrid(img, mask = []):
+def tv_hybrid(img, mask = [], reg_z_over_reg = 1.0, match_2D_form = False):
 
     if mask != []:
         img[~mask] = 0
 
     if len(img) == 2:
-        return(pytv.tv_pyTorch_2d.tv_hybrid(img))
+        return(pytv.tv_2d_GPU.tv_hybrid(img))
     elif (len(img.shape) == 3 and img.shape[0] < 3):
-        return(pytv.tv_pyTorch_2d.tv_hybrid(img[0]))
+        return(pytv.tv_2d_GPU.tv_hybrid(img[0]))
 
     kernel_col = np.array([[[-1,1]]]).astype('float32')
     kernel_col = torch.as_tensor(np.reshape(kernel_col, (1,1)+kernel_col.shape)).cuda()
@@ -88,7 +88,7 @@ def tv_hybrid(img, mask = []):
 
     row_diff_tensor[:, :-1, :] = torch.nn.functional.conv3d(img_tensor, kernel_row, bias=None, stride=1, padding = 0).squeeze()
     col_diff_tensor[:, :, :-1] = torch.nn.functional.conv3d(img_tensor, kernel_col, bias=None, stride=1, padding = 0).squeeze()
-    slice_diff_tensor[:-1, :, :] = torch.nn.functional.conv3d(img_tensor, kernel_slice, bias=None, stride=1, padding = 0).squeeze()
+    slice_diff_tensor[:-1, :, :] = np.sqrt(reg_z_over_reg) * torch.nn.functional.conv3d(img_tensor, kernel_slice, bias=None, stride=1, padding = 0).squeeze()
 
     # To match CPU explicit versions
     row_diff_tensor[:, :, -1] = 0
@@ -99,9 +99,14 @@ def tv_hybrid(img, mask = []):
     slice_diff_tensor[:, :, -1] = 0
 
     grad_norms = (torch.zeros_like(img_tensor)).squeeze()
-    grad_norms[:-1, :-1, :-1] = torch.sqrt(torch.square(row_diff_tensor[1:, :-1, 1:]) + torch.square(row_diff_tensor[:-1, :-1, :-1])
-                                           + torch.square(col_diff_tensor[1:, 1:, :-1]) + torch.square(col_diff_tensor[:-1, :-1, :-1])
-                                           + torch.square(slice_diff_tensor[:-1, 1:, 1:]) + torch.square(slice_diff_tensor[:-1, :-1, :-1])) / np.sqrt(2)
+    if match_2D_form:
+        grad_norms[:-1, :-1, :-1] = torch.sqrt(torch.square(row_diff_tensor[:-1, :-1, 1:]) + torch.square(row_diff_tensor[:-1, :-1, :-1])
+                                               + torch.square(col_diff_tensor[:-1, 1:, :-1]) + torch.square(col_diff_tensor[:-1, :-1, :-1])
+                                               + torch.square(slice_diff_tensor[:-1, 1:, 1:]) + torch.square(slice_diff_tensor[:-1, :-1, :-1])) / np.sqrt(2)
+    else:
+        grad_norms[:-1, :-1, :-1] = torch.sqrt(torch.square(row_diff_tensor[1:, :-1, 1:]) + torch.square(row_diff_tensor[:-1, :-1, :-1])
+                                               + torch.square(col_diff_tensor[1:, 1:, :-1]) + torch.square(col_diff_tensor[:-1, :-1, :-1])
+                                               + torch.square(slice_diff_tensor[:-1, 1:, 1:]) + torch.square(slice_diff_tensor[:-1, :-1, :-1])) / np.sqrt(2)
     tv = grad_norms.sum().cpu().detach().numpy().squeeze()
     grad_norms[grad_norms == 0] = np.inf
     
@@ -126,15 +131,15 @@ def tv_hybrid(img, mask = []):
     return(tv, G_cpu)
 
 
-def tv_downwind(img, mask = []):
+def tv_downwind(img, mask = [], reg_z_over_reg = 1.0):
 
     if mask != []:
         img[~mask] = 0
 
     if len(img) == 2:
-        return(pytv.tv_pyTorch_2d.tv_downwind(img))
+        return(pytv.tv_2d_GPU.tv_downwind(img))
     elif (len(img.shape) == 3 and img.shape[0] < 3):
-        return(pytv.tv_pyTorch_2d.tv_downwind(img[0]))
+        return(pytv.tv_2d_GPU.tv_downwind(img[0]))
 
     kernel_col = np.array([[[-1,1]]]).astype('float32')
     kernel_col = torch.as_tensor(np.reshape(kernel_col, (1,1)+kernel_col.shape)).cuda()
@@ -153,7 +158,7 @@ def tv_downwind(img, mask = []):
 
     row_diff_tensor[:, :-1, :] = torch.nn.functional.conv3d(img_tensor, kernel_row, bias=None, stride=1, padding = 0).squeeze()
     col_diff_tensor[:, :, :-1] = torch.nn.functional.conv3d(img_tensor, kernel_col, bias=None, stride=1, padding = 0).squeeze()
-    slice_diff_tensor[:-1, :, :] = torch.nn.functional.conv3d(img_tensor, kernel_slice, bias=None, stride=1, padding = 0).squeeze()
+    slice_diff_tensor[:-1, :, :] = np.sqrt(reg_z_over_reg) * torch.nn.functional.conv3d(img_tensor, kernel_slice, bias=None, stride=1, padding = 0).squeeze()
 
     # To match CPU explicit versions
     row_diff_tensor[:, :, -1] = 0
@@ -181,15 +186,15 @@ def tv_downwind(img, mask = []):
     return(tv, G_cpu)
 
 
-def tv_upwind(img, mask = []):
+def tv_upwind(img, mask = [], reg_z_over_reg = 1.0):
 
     if mask != []:
         img[~mask] = 0
 
     if len(img) == 2:
-        return(pytv.tv_pyTorch_2d.tv_upwind(img))
+        return(pytv.tv_2d_GPU.tv_upwind(img))
     elif (len(img.shape) == 3 and img.shape[0] < 3):
-        return(pytv.tv_pyTorch_2d.tv_upwind(img[0]))
+        return(pytv.tv_2d_GPU.tv_upwind(img[0]))
 
     kernel_col = np.array([[[-1,1]]]).astype('float32')
     kernel_col = torch.as_tensor(np.reshape(kernel_col, (1,1)+kernel_col.shape)).cuda()
@@ -209,7 +214,7 @@ def tv_upwind(img, mask = []):
     # img_tensor of size: (N,Cin,H,W), N: batch size, Cin: number of input channels.
     row_diff_tensor[:, :-1, :] = torch.nn.functional.conv3d(img_tensor, kernel_row, bias=None, stride=1, padding = 0).squeeze()
     col_diff_tensor[:, :, :-1] = torch.nn.functional.conv3d(img_tensor, kernel_col, bias=None, stride=1, padding = 0).squeeze()
-    slice_diff_tensor[:-1, :, :] = torch.nn.functional.conv3d(img_tensor, kernel_slice, bias=None, stride=1, padding = 0).squeeze()
+    slice_diff_tensor[:-1, :, :] = np.sqrt(reg_z_over_reg) * torch.nn.functional.conv3d(img_tensor, kernel_slice, bias=None, stride=1, padding = 0).squeeze()
 
     # This is equivalent (without reshaping img as above), but slightly slower (15-20%)
     # row_diff_tensor[:, :-1, :] = img_tensor[:, 1:,:] - img_tensor[:,:-1,:]

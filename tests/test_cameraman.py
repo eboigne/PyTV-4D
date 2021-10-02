@@ -7,7 +7,7 @@ nb_it = 150
 regularization = 25
 step_size = 5e-3 # If step size is too large, loss function may not decrease at every step
 
-cameraman_truth = pytv.utils.cameraman() # Open Lenna's grayscale image
+cameraman_truth = pytv.utils.cameraman() # Open the cameraman's grayscale image
 cameraman_noisy = cameraman_truth + noise_level * np.random.rand(*cameraman_truth.shape) # Add noise
 cameraman_estimate = np.copy(cameraman_noisy)
 
@@ -35,7 +35,3 @@ plt.xlabel('Iteration')
 plt.ylabel('Loss function')
 plt.tight_layout(pad=0.5)
 plt.show()
-
-
-
-

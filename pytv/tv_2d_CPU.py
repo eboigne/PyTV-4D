@@ -54,10 +54,10 @@ def tv_hybrid(img, mask = []):
     # When non-differentiable, set to 0.
     grad_norms[grad_norms == 0] = np.inf # not necessary if eps > 0
 
-    G[:-1, :-1] =  - (row_diff+col_diff)[:-1, :-1]/grad_norms[:-1, :-1]
+    G[:-1, :-1] = - (row_diff+col_diff)[:-1, :-1]/grad_norms[:-1, :-1]
     G[:-1, 1:] += (col_diff[:-1, :-1] - row_diff[:-1, 1:])/grad_norms[:-1, :-1]
     G[1:, :-1] += (row_diff[:-1, :-1] - col_diff[1:, :-1])/grad_norms[:-1, :-1]
-    G[1:, 1:] +=  (row_diff[:-1,1:]+col_diff[1:,:-1])/grad_norms[:-1, :-1]
+    G[1:, 1:] += (row_diff[:-1, 1:]+col_diff[1:, :-1])/grad_norms[:-1, :-1]
 
     return (tv, G)
 

@@ -18,8 +18,10 @@ def compute_L21_norm(D_img):
         The L2,1 norm of the given input array.
     '''
 
-    if isinstance(D_img, torch.Tensor):
+    if ~isinstance(D_img, torch.Tensor):
         D_img = torch.as_tensor(D_img).cuda()
+    else:
+        D_img = D_img.cuda()
 
     out = torch.square(D_img)
     out = torch.sum(out, axis = 1) # tuple(range(len(D_img.shape)-3)))
@@ -181,6 +183,8 @@ def D_T_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, halve_tv_at_both_end = F
 
     if type(img) != torch.Tensor:
         img = torch.as_tensor(img.astype('float32')).cuda()
+    else:
+        img = img.cuda()
 
     kernel_col = np.array([[[1,-1]]]).astype('float32')
     kernel_col = torch.as_tensor(np.reshape(kernel_col, (1,1)+kernel_col.shape)).cuda()
@@ -548,6 +552,8 @@ def D_T_downwind(img, reg_z_over_reg = 1.0, reg_time = 0, return_pytorch_tensor 
 
     if type(img) != torch.Tensor:
         img = torch.as_tensor(img.astype('float32')).cuda()
+    else:
+        img = img.cuda()
 
     kernel_col = np.array([[[-1,1]]]).astype('float32')
     kernel_col = torch.as_tensor(np.reshape(kernel_col, (1,1)+kernel_col.shape)).cuda()
@@ -631,6 +637,8 @@ def D_T_upwind(img, reg_z_over_reg = 1.0, reg_time = 0, return_pytorch_tensor = 
 
     if type(img) != torch.Tensor:
         img = torch.as_tensor(img.astype('float32')).cuda()
+    else:
+        img = img.cuda()
 
     kernel_col = np.array([[[1,-1]]]).astype('float32')
     kernel_col = torch.as_tensor(np.reshape(kernel_col, (1,1)+kernel_col.shape)).cuda()
@@ -723,6 +731,8 @@ def D_T_centered(img, reg_z_over_reg = 1.0, reg_time = 0, return_pytorch_tensor 
 
     if type(img) != torch.Tensor:
         img = torch.as_tensor(img.astype('float32')).cuda()
+    else:
+        img = img.cuda()
 
     kernel_col = np.array([[[0.5,0,-0.5]]]).astype('float32')
     kernel_col = torch.as_tensor(np.reshape(kernel_col, (1,1)+kernel_col.shape)).cuda()
