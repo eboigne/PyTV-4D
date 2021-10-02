@@ -13,7 +13,10 @@ cameraman_estimate = np.copy(cameraman_noisy)
 
 loss_fct = np.zeros([nb_it,])
 for it in range(nb_it): # A simple sub-gradient descent algorithm for image denoising
-    tv, G = pytv.tv.tv_hybrid(cameraman_estimate)
+    try:
+        tv, G = pytv.tv_CPU.tv_hybrid(cameraman_estimate)
+    except:
+        tv, G = pytv.tv_GPU.tv_hybrid(cameraman_estimate)
     cameraman_estimate += - step_size * ((cameraman_estimate - cameraman_noisy) + regularization * G)
     loss_fct[it] = 0.5 * np.sum(np.square(cameraman_estimate - cameraman_noisy)) + regularization * tv
 

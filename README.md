@@ -62,8 +62,8 @@ Nz, N = 20, 1000 # 3D Image dimensions
 np.random.seed(0)
 img = np.random.rand(Nz, N, N)
 
-tv1, G1 = pytv.tv.tv_hybrid(img)
-tv2, G2 = pytv.tv_pyTorch.tv_hybrid(img)
+tv1, G1 = pytv.tv_CPU.tv_hybrid(img)
+tv2, G2 = pytv.tv_GPU.tv_hybrid(img)
 
 print('TV value from CPU: '+str(tv1))
 print('TV value from GPU: '+str(tv2))

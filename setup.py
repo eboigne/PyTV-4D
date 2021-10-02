@@ -2,6 +2,7 @@ from setuptools import setup
 
 requirements = [
 	'numpy',
+    'matplotlib',
 	'pytorch>=1.5.0'
 ]
 
@@ -15,5 +16,7 @@ setup(
     url='https://github.com/eboigne/PyTV',
     packages=['pytv'],
     install_requires=requirements,
+    include_package_data=True, # With this, the non .py files specified in MANIFEST.in are included
+    package_data={'pytv': ['pytv/media', 'pytv/media/*']},
     keywords='pytv',
 )
