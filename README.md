@@ -9,8 +9,8 @@ A set of Python routines to compute the Total Variation (TV) of 2D, 3D and 4D im
 - [Getting started](#getting-started)
     + [Computing TV and subgradient](#computing-tv-and-subgradient)
     + [Denoizing an image](#denoizing-an-image)
-    + [Accelerated convergence with operators](#accelerated-convergence-with-operators)
-- [Overview](#overview)
+    + [Accelerated convergence using gradient operators](#accelerated-convergence-using-gradient-operators)
+- [PyTV functions overview](#pytv-functions-overview)
 - [TV definition](#tv-definition)
 - [Comments](#comments)
 
@@ -172,7 +172,7 @@ for it in range(nb_it):
 <img src="https://raw.githubusercontent.com/eboigne/PyTV/main/pytv/media/img_denoising_loss_fct_CP_GD.png" alt="Loss function"/>
 </p>
 
-# PyTV function overview
+# PyTV functions overview
 
 PyTV provides the following functions:
 
