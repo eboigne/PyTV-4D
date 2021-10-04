@@ -7,7 +7,7 @@ def tv_centered(img, mask = [], reg_z_over_reg = 1.0):
     if mask != []:
         img[~mask] = 0
 
-    if len(img) == 2:
+    if len(img.shape) == 2:
         return(pytv.tv_2d_GPU.tv_centered(img))
     elif (len(img.shape) == 3 and img.shape[0] < 3):
         return(pytv.tv_2d_GPU.tv_centered(img[0]))
@@ -66,7 +66,7 @@ def tv_hybrid(img, mask = [], reg_z_over_reg = 1.0, match_2D_form = False):
     if mask != []:
         img[~mask] = 0
 
-    if len(img) == 2:
+    if len(img.shape) == 2:
         return(pytv.tv_2d_GPU.tv_hybrid(img))
     elif (len(img.shape) == 3 and img.shape[0] < 3):
         return(pytv.tv_2d_GPU.tv_hybrid(img[0]))
@@ -136,7 +136,7 @@ def tv_downwind(img, mask = [], reg_z_over_reg = 1.0):
     if mask != []:
         img[~mask] = 0
 
-    if len(img) == 2:
+    if len(img.shape) == 2:
         return(pytv.tv_2d_GPU.tv_downwind(img))
     elif (len(img.shape) == 3 and img.shape[0] < 3):
         return(pytv.tv_2d_GPU.tv_downwind(img[0]))
@@ -191,7 +191,7 @@ def tv_upwind(img, mask = [], reg_z_over_reg = 1.0):
     if mask != []:
         img[~mask] = 0
 
-    if len(img) == 2:
+    if len(img.shape) == 2:
         return(pytv.tv_2d_GPU.tv_upwind(img))
     elif (len(img.shape) == 3 and img.shape[0] < 3):
         return(pytv.tv_2d_GPU.tv_upwind(img[0]))

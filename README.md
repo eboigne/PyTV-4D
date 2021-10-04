@@ -134,6 +134,32 @@ plt.show()
 
 
 
+### Accelerated convergence with operators
+Because the loss function with total variation is non-smooth, it is challenging the achieve sufficient convergence with the gradient descent algorithm. Instead, the primal-dual algorithm from Chambolle and Pock (https://doi.org/10.1007/s10851-010-0251-1) achieves faster convergence. To enable easy implementation of such proximal-based algorithm, operator formulations of the TV calculations are available in PyTV. A simple example is presented below in the case of the denoising of the cameraman image:   
+
+```
+# A simple version of the Chambolle & Pock algorithm for image denoising
+# Ref: Chambolle, Antonin, and Thomas Pock. "A first-order primal-dual algorithm for convex problems with applications to imaging." Journal of mathematical imaging and vision 40.1 (2011): 120-145.
+
+sigma_D = 0.5
+sigma_A = 1.0
+tau = 1 / (8 + 1)
+
+for it in range(nb_it):
+    
+    # Dual update
+    dual_update_fidelity = (dual_update_fidelity + sigma_A * (cameraman_estimate - cameraman_noisy))/(1.0+sigma_A)
+    D_x = pytv.tv_operators_GPU.D_hybrid(cameraman_estimate)
+    prox_argument = dual_update_TV + sigma_D * D_x
+    dual_update_TV = prox_argument / np.maximum(1.0, np.sqrt(np.sum(prox_argument**2, axis = 1)) / regularization)
+
+    # Primal update
+    cameraman_estimate = cameraman_estimate - tau * dual_update_fidelity - tau * pytv.tv_operators_GPU.D_T_hybrid(dual_update_TV)
+    
+    # Loss function update
+    loss_fct[it] = 0.5 * np.sum(np.square(cameraman_estimate - cameraman_noisy)) + regularization * pytv.tv_operators_GPU.compute_L21_norm(D_x)
+```
+
 
 # Comments
 
