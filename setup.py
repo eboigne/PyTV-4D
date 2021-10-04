@@ -8,7 +8,7 @@ requirements = [
 
 setup(
     name='PyTV',
-    version='1.0.0',
+    version='1.0.1',
     description='Short description',
     license='GNUv3',
     author='Emeric Boigne',
