@@ -1,9 +1,13 @@
 import numpy as np
 import time
-
 from pytv import *
 
 def run_CPU_tests(N = 100, Nz = 20):
+    '''
+    A function that runs CPU tests to check PyTV is working properly.
+    '''
+
+
     tv_schemes = ['downwind', 'upwind', 'centered', 'hybrid']
     print('\nRunning CPU tests:')
     for tv_scheme in tv_schemes:
@@ -14,6 +18,10 @@ def run_CPU_tests(N = 100, Nz = 20):
     print('\nPassed all CPU tests successfully')
 
 def run_GPU_tests(N = 100, Nz = 20, M = [2, 3, 4]):
+    '''
+    A function that runs GPU tests to check PyTV is working properly.
+    '''
+
     tv_schemes = ['downwind', 'upwind', 'centered', 'hybrid']
     print('\nRunning GPU tests:')
     for tv_scheme in tv_schemes:
@@ -25,6 +33,22 @@ def run_GPU_tests(N = 100, Nz = 20, M = [2, 3, 4]):
     print('\nPassed all GPU tests successfully')
 
 def test_equal(list, tolerance = 1e-5):
+    '''
+    A function that tests whether the elements in list are equal to each within a tolerance
+
+    Parameters
+    ----------
+    list : list
+        A list of elements such as float or np.ndarray
+    tolerance : float
+        The tolerance within which arguments are called equal
+
+    Returns
+    -------
+    test : boolean
+        Whether the input elements are equal
+    '''
+
     mean_array = np.mean(list, axis = 0).astype('float32')
     test = True
     for array in list:
@@ -32,7 +56,14 @@ def test_equal(list, tolerance = 1e-5):
     return test
 
 def test_operator_tranpose(tv_scheme, N = 100, Nz = 20, M = [2, 3, 4], tolerance = 1e-4, cpu_only = False, n_test = 1):
+    '''
+    A function that tests whether the implemented gradients functions D and D_T for the provided scheme are transposed.
 
+    Parameters
+    ----------
+    tv_scheme : str
+        A string of the tested TV scheme, among 'upwind', 'downwind', 'centered' or 'hybrid'
+    '''
 
     # 2D CPU Transpose
     D = lambda x: eval('tv_operators_CPU.D_'+tv_scheme+'(np.reshape(x, (1,1,)+x.shape))')
@@ -101,8 +132,15 @@ def test_operator_tranpose(tv_scheme, N = 100, Nz = 20, M = [2, 3, 4], tolerance
 
     return True
 
-
 def test_2D_to_3D(tv_scheme, N = 100, Nz = 20, tolerance = 1e-5, cpu_only = False):
+    '''
+    A function that tests whether the 2D and 3D function implementations provide the same results for the given scheme.
+
+    Parameters
+    ----------
+    tv_scheme : str
+        A string of the tested TV scheme, among 'upwind', 'downwind', 'centered' or 'hybrid'
+    '''
 
     if Nz < 5:
         Nz = 5
@@ -170,6 +208,14 @@ def test_2D_to_3D(tv_scheme, N = 100, Nz = 20, tolerance = 1e-5, cpu_only = Fals
     return True
 
 def test_tv_G_D_DT_3D(tv_scheme, N = 100, Nz = 20, tolerance = 1e-5, cpu_only = False):
+    '''
+    A function that tests whether the different TV scheme implementations provide the same results for 3D data.
+
+    Parameters
+    ----------
+    tv_scheme : str
+        A string of the tested TV scheme, among 'upwind', 'downwind', 'centered' or 'hybrid'
+    '''
 
     img1 = np.random.rand(Nz, N, N)
     img2 = np.reshape(img1, [Nz, 1, N, N])
@@ -218,6 +264,14 @@ def test_tv_G_D_DT_3D(tv_scheme, N = 100, Nz = 20, tolerance = 1e-5, cpu_only = 
         return([time1,time2, time3, time4])
 
 def test_tv_D_DT_4D(tv_scheme, N = 100, Nz = 20, M = [2, 3, 4], tolerance = 1e-5):
+    '''
+    A function that tests whether the different TV scheme implementations provide the same results for 3D & time data.
+
+    Parameters
+    ----------
+    tv_scheme : str
+        A string of the tested TV scheme, among 'upwind', 'downwind', 'centered' or 'hybrid'
+    '''
 
     time3, time4 = 0, 0
     for this_M in M:
@@ -251,7 +305,16 @@ def test_tv_D_DT_4D(tv_scheme, N = 100, Nz = 20, M = [2, 3, 4], tolerance = 1e-5
 
     return([time3,time4])
 
-def test_transpose(operator, operator_transposed, n_rays = 100, n_test = 5, tolerance = 1e-3, dtype = 'float32', verbose = False, nz = 1, M = 1): # Good test
+def test_transpose(operator, operator_transposed, n_rays = 100, n_test = 5, tolerance = 1e-3, dtype = 'float32', verbose = False, nz = 1, M = 1):
+    '''
+    A function that tests whether the two input operators are numerically tranpose of each other.
+
+    Returns
+    -------
+    res : boolean
+        Whether the input operators are adjunct
+    '''
+
     res = True
     count_wrong = 0
 

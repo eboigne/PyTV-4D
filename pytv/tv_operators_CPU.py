@@ -3,13 +3,13 @@ import numpy as np
 def compute_L21_norm(D_img):
     '''
     Compute the L2,1 norm of an image of discrete differences: |x|_2,1 = \sum_i \sqrt(\sum_j x_{i,j}^2),
-    with index i summing over image pixels, and index j summing over difference terms.
+    with index i summing over image pixels, and index j summing over the difference terms.
     Usage: TV(img) = reg * compute_L21_norm(D(img))
 
     Parameters
     ----------
     D_img : np.ndarray
-        The numpy array of differences of dimensions Nz x Nd x M x N x N.
+        The numpy array of the discrete gradient of dimensions Nz x Nd x M x N x N.
 
     Returns
     -------
@@ -18,20 +18,36 @@ def compute_L21_norm(D_img):
     '''
 
     out = np.square(D_img)
-    out = np.sum(out, axis = 1) # tuple(range(len(D_img.shape)-3)))
+    out = np.sum(out, axis = 1)
     out = np.sqrt(out)
-    out = np.sum(out) #, axis = (-1,-2))
+    out = np.sum(out)
 
     return(out)
 
-def D_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, halve_tv_at_both_end = False, factor_reg_static = 0, mask_static = False):
+def D_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, factor_reg_static = 0, halve_tv_at_both_end = False):
     '''
-    Calculates the image of the operator D (gradient discretized using hybrid scheme) applied to variable img
-    Parameters:
-        img : img of dimensions Nz x M x N x N
-    Returns: 
-        out: D(img) of dimensions Nz x 4/6/8 x M x N x N
+    Calculates the output of the input image img by the operator D (gradient discretized using hybrid scheme)
+
+    Parameters
+    ----------
+    img : np.ndarray
+        The array of the input image data of dimensions Nz x M x N x N.
+    reg_z_over_reg : float
+        The ratio of the regularization parameter in the z direction, versus the x-y plane.
+    reg_time : float
+        The ratio of the regularization parameter in the time direction, versus the x-y plane.
+    mask_static : np.ndarray
+        An of dimensions 1 x 1 x N x N serving as a mask to indicate pixels on which to enforce a different
+        time regularization parameter, for instance used to enforce more static regions in the image.
+    factor_reg_static : float
+        The regularization parameter to compute in the region of the image specified by mask_static.
+
+    Returns
+    -------
+    np.ndarray
+        The array of the discretized gradient D(img) of dimensions Nz x Nd x M x N x N.
     '''
+
     if reg_z_over_reg == np.nan:
         reg_z_over_reg = 0.0
 
@@ -127,11 +143,21 @@ def D_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, halve_tv_at_both_end = Fal
 
 def D_downwind(img, reg_z_over_reg = 1.0, reg_time = 0):
     '''
-    Calculates the image of the operator D (gradient discretized using downwind scheme) applied to variable img
-    Parameters:
-        img : img of dimensions Nz x M x N x N
-    Returns:
-        out: D(img) of dimensions Nz x Nd x M x N x N, Nd = 2, 3 or 4.
+    Calculates the output of the input image img by the operator D (gradient discretized using downwind scheme)
+
+    Parameters
+    ----------
+    img : np.ndarray
+        The array of the input image data of dimensions Nz x M x N x N.
+    reg_z_over_reg : float
+        The ratio of the regularization parameter in the z direction, versus the x-y plane.
+    reg_time : float
+        The ratio of the regularization parameter in the time direction, versus the x-y plane.
+
+    Returns
+    -------
+    np.ndarray
+        The array of the discretized gradient D(img) of dimensions Nz x Nd x M x N x N.
     '''
 
     if reg_z_over_reg == np.nan:
@@ -179,11 +205,21 @@ def D_downwind(img, reg_z_over_reg = 1.0, reg_time = 0):
 
 def D_upwind(img, reg_z_over_reg = 1.0, reg_time = 0):
     '''
-    Calculates the image of the operator D (gradient discretized using upwind scheme) applied to variable img
-    Parameters:
-        img : img of dimensions Nz x M x N x N
-    Returns:
-        out: D(img) of dimensions Nz x Nd x M x N x N, Nd = 2, 3 or 4.
+    Calculates the output of the input image img by the operator D (gradient discretized using upwind scheme)
+
+    Parameters
+    ----------
+    img : np.ndarray
+        The array of the input image data of dimensions Nz x M x N x N.
+    reg_z_over_reg : float
+        The ratio of the regularization parameter in the z direction, versus the x-y plane.
+    reg_time : float
+        The ratio of the regularization parameter in the time direction, versus the x-y plane.
+
+    Returns
+    -------
+    np.ndarray
+        The array of the discretized gradient D(img) of dimensions Nz x Nd x M x N x N.
     '''
 
     if reg_z_over_reg == np.nan:
@@ -231,11 +267,21 @@ def D_upwind(img, reg_z_over_reg = 1.0, reg_time = 0):
 
 def D_centered(img, reg_z_over_reg = 1.0, reg_time = 0):
     '''
-    Calculates the image of the operator D (gradient discretized using centered scheme) applied to variable img
-    Parameters:
-        img : img of dimensions Nz x M x N x N
-    Returns: 
-        out: D(img) of dimensions Nz x 2/3/4 x M x N x N
+    Calculates the output of the input image img by the operator D (gradient discretized using centered scheme)
+
+    Parameters
+    ----------
+    img : np.ndarray
+        The array of the input image data of dimensions Nz x M x N x N.
+    reg_z_over_reg : float
+        The ratio of the regularization parameter in the z direction, versus the x-y plane.
+    reg_time : float
+        The ratio of the regularization parameter in the time direction, versus the x-y plane.
+
+    Returns
+    -------
+    np.ndarray
+        The array of the discretized gradient D(img) of dimensions Nz x Nd x M x N x N.
     '''
 
     if reg_z_over_reg == np.nan:
@@ -287,13 +333,28 @@ def D_centered(img, reg_z_over_reg = 1.0, reg_time = 0):
 
     return (D_img)
 
-def D_T_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, halve_tv_at_both_end = False, factor_reg_static = 0, mask_static = False):
+def D_T_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, factor_reg_static = 0, halve_tv_at_both_end = False):
     '''
-    Calculates the image of the operator D^T (transposed gradient discretized using centered scheme) applied to variable img
-    Parameters:
-        img : img of dimensions squeeze(Nz x 4/6/8 x M x N x N)
-    Returns:
-        out: D_T(img) of dimensions Nz x N x N (or Nz x M x N x N)
+    Calculates the output of the input image img by the operator D^T (tranposed gradient discretized using hybrid scheme)
+
+    Parameters
+    ----------
+    img : np.ndarray
+        The array of the input image data of dimensions Nz x Nd x M x N x N.
+    reg_z_over_reg : float
+        The ratio of the regularization parameter in the z direction, versus the x-y plane.
+    reg_time : float
+        The ratio of the regularization parameter in the time direction, versus the x-y plane.
+    mask_static : np.ndarray
+        An of dimensions 1 x 1 x N x N serving as a mask to indicate pixels on which to enforce a different
+        time regularization parameter, for instance used to enforce more static regions in the image.
+    factor_reg_static : float
+        The regularization parameter to compute in the region of the image specified by mask_static.
+
+    Returns
+    -------
+    np.ndarray
+        The array of the discretized gradient D^T(img) of dimensions Nz x M x N x N.
     '''
 
     if reg_z_over_reg == np.nan:
@@ -392,11 +453,21 @@ def D_T_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, halve_tv_at_both_end = F
 
 def D_T_downwind(img, reg_z_over_reg = 1.0, reg_time = 0):
     '''
-    Calculates the image of the operator D^T (transposed gradient discretized using centered scheme) applied to variable img
-    Parameters:
-        img : img of dimensions squeeze(Nz x 2/3/4 x M x N x N)
-    Returns: 
-        out: D_T(img) of dimensions Nz x N x N (or Nz x M x N x N)
+    Calculates the output of the input image img by the operator D^T (tranposed gradient discretized using downwind scheme)
+
+    Parameters
+    ----------
+    img : np.ndarray
+        The array of the input image data of dimensions Nz x Nd x M x N x N.
+    reg_z_over_reg : float
+        The ratio of the regularization parameter in the z direction, versus the x-y plane.
+    reg_time : float
+        The ratio of the regularization parameter in the time direction, versus the x-y plane.
+
+    Returns
+    -------
+    np.ndarray
+        The array of the discretized gradient D^T(img) of dimensions Nz x M x N x N.
     '''
 
     if reg_z_over_reg == np.nan:
@@ -453,11 +524,21 @@ def D_T_downwind(img, reg_z_over_reg = 1.0, reg_time = 0):
 
 def D_T_upwind(img, reg_z_over_reg = 1.0, reg_time = 0):
     '''
-    Calculates the image of the operator D^T (transposed gradient discretized using upwind scheme) applied to variable img
-    Parameters:
-        img : img of dimensions Nz x Nd x M x N x N
-    Returns: 
-        out: D_T(img) of dimensions Nz x N x N (or Nz x M x N x N)
+    Calculates the output of the input image img by the operator D^T (tranposed gradient discretized using upwind scheme)
+
+    Parameters
+    ----------
+    img : np.ndarray
+        The array of the input image data of dimensions Nz x Nd x M x N x N.
+    reg_z_over_reg : float
+        The ratio of the regularization parameter in the z direction, versus the x-y plane.
+    reg_time : float
+        The ratio of the regularization parameter in the time direction, versus the x-y plane.
+
+    Returns
+    -------
+    np.ndarray
+        The array of the discretized gradient D^T(img) of dimensions Nz x M x N x N.
     '''
 
     if reg_z_over_reg == np.nan:
@@ -493,16 +574,16 @@ def D_T_upwind(img, reg_z_over_reg = 1.0, reg_time = 0):
         D_T_img[:,:,:-1,-1] += img[:,1,:,:-1,-2]
 
     i_d = 2
-    if Nz > 1 and reg_z_over_reg > 0: # z-terms
-        # Forward z term
+    # The intensity differences across slices
+    if Nz > 1 and reg_z_over_reg > 0:
         D_T_img[1:-1,:,:-1,:-1] += np.sqrt(reg_z_over_reg) * (img[:-2,i_d,:,:-1,:-1]-img[1:-1,i_d,:,:-1,:-1])
         D_T_img[0,:,:-1,:-1] += -np.sqrt(reg_z_over_reg) * img[0,i_d,:,:-1,:-1]
         D_T_img[-1,:,:-1,:-1] += np.sqrt(reg_z_over_reg) * img[-2,i_d,:,:-1,:-1]
 
         i_d += 1
 
+    # The intensity differences across time
     if reg_time > 0 and M > 1:
-        # Forward time term
         if Nz > 1:
             D_T_img[:-1,1:-1,:-1,:-1] += np.sqrt(reg_time) * (img[:-1,i_d,:-2,:-1,:-1]-img[:-1,i_d,1:-1,:-1,:-1])
             D_T_img[:-1,0,:-1,:-1] += -np.sqrt(reg_time) * img[:-1,i_d,0,:-1,:-1]
@@ -517,11 +598,21 @@ def D_T_upwind(img, reg_z_over_reg = 1.0, reg_time = 0):
 
 def D_T_centered(img, reg_z_over_reg = 1.0, reg_time = 0):
     '''
-    Calculates the image of the operator D^T (transposed gradient discretized using centered scheme) applied to variable img
-    Parameters:
-        img : img of dimensions squeeze(Nz x 2/3/4 x M x N x N)
-    Returns: 
-        out: D_T(img) of dimensions Nz x N x N (or Nz x M x N x N)
+    Calculates the output of the input image img by the operator D^T (tranposed gradient discretized using centered scheme)
+
+    Parameters
+    ----------
+    img : np.ndarray
+        The array of the input image data of dimensions Nz x Nd x M x N x N.
+    reg_z_over_reg : float
+        The ratio of the regularization parameter in the z direction, versus the x-y plane.
+    reg_time : float
+        The ratio of the regularization parameter in the time direction, versus the x-y plane.
+
+    Returns
+    -------
+    np.ndarray
+        The array of the discretized gradient D^T(img) of dimensions Nz x M x N x N.
     '''
 
     if reg_z_over_reg == np.nan:
@@ -555,15 +646,15 @@ def D_T_centered(img, reg_z_over_reg = 1.0, reg_time = 0):
         D_T_img[:,:,1:-1,0:2] += -0.5 * img[:,1,:,1:-1,1:3]
 
     i_d = 2
+    # The intensity differences across slices
     if Nz > 2 and reg_z_over_reg > 0:
-        # The intensity differences across slices
         D_T_img[2:-2,:,1:-1,1:-1] += np.sqrt(reg_z_over_reg) * 0.5 * (img[1:-3,i_d,:,1:-1,1:-1]-img[3:-1,i_d,:,1:-1,1:-1])
         D_T_img[0:2,:,1:-1,1:-1] += - np.sqrt(reg_z_over_reg) * 0.5 * img[1:3,i_d,:,1:-1,1:-1]
         D_T_img[-2:,:,1:-1,1:-1] += np.sqrt(reg_z_over_reg) * 0.5 * img[-3:-1,i_d,:,1:-1,1:-1]
         i_d += 1
 
+    # The intensity differences across times
     if reg_time > 0 and M > 1:
-        # The intensity differences across times
         if M < 4: # Fall back to upwind scheme
             if Nz > 1:
                 D_T_img[:-1,1:-1,:-1,:-1] += np.sqrt(reg_time) * (img[:-1,i_d,:-2,:-1,:-1]-img[:-1,i_d,1:-1,:-1,:-1])
@@ -585,5 +676,3 @@ def D_T_centered(img, reg_z_over_reg = 1.0, reg_time = 0):
         i_d += 1
 
     return(D_T_img)
-
-
