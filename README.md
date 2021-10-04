@@ -1,6 +1,19 @@
 # PyTV
 A set of Python routines to compute the Total Variation (TV) of 2D, 3D and 4D images on CPU & GPU, in application to iterative Computed Tomography (CT) reconstructions.
 
+- [Current features](#current-features)
+- [Installation](#installation)
+    + [CPU Only](#cpu-only)
+    + [CPU & GPU](#cpu---gpu)
+    + [Testing](#testing)
+- [Getting started](#getting-started)
+    + [Computing TV and subgradient](#computing-tv-and-subgradient)
+    + [Denoizing an image](#denoizing-an-image)
+    + [Accelerated convergence with operators](#accelerated-convergence-with-operators)
+- [Overview](#overview)
+- [TV definition](#tv-definition)
+- [Comments](#comments)
+
 # Current features
 
 - Explicit functions to compute the total variation of 2D & 3D images.
@@ -8,15 +21,6 @@ A set of Python routines to compute the Total Variation (TV) of 2D, 3D and 4D im
 - Efficient GPU implementations using PyTorch tensors and convolution kernels.
 - Operator-form implementation compatible with primal-dual and proximal formulations.
 - Four different spatial discretization schemes are available: upwind, downwind, centered, and hybrid.
-
-# TV definition
-
-
-<p align="center">
-<img src="https://raw.githubusercontent.com/eboigne/PyTV/main/pytv/media/TV_def.png" alt="TV definition"/>
-<img src="https://raw.githubusercontent.com/eboigne/PyTV/main/pytv/media/TV_table_schemes.png" alt="TV discretization"/>
-</p>
-
 
 
 # Installation
@@ -39,7 +43,7 @@ Then, the PyTV files can installed as a package using anaconda:
 
 Once installed, you can run some basic tests on CPU and GPU:
 
-```
+```python
 import pytv
 
 pytv.run_CPU_tests()
@@ -48,13 +52,14 @@ pytv.run_GPU_tests()
 
 Note that the tests may fail because of bad rng, so try running it a couple times.
 
+
 # Getting started
 
 ### Computing TV and subgradient
 
 Below is a simple example to compute the total variation and sub-gradient on CPU and GPU:
 
-```
+```python
 import pytv  
 import numpy as np
 
@@ -89,7 +94,7 @@ A simple example of image denoizing using the total variation. The following los
 where <img src="https://latex.codecogs.com/svg.latex?{\color{Gray}\Large&space;x"/> is the current image, <img src="https://latex.codecogs.com/svg.latex?{\color{Gray}\Large&space;x_0"/> is the input noisy image, and <img src="https://latex.codecogs.com/svg.latex?{\color{Gray}\Large&space;\lambda"/> is a regularization parameter.
 Because the TV is not everywhere differentiable, the sub-gradient descent method is used to minimize this loss function:
 
-```
+```python
 import matplotlib.pyplot as plt
 
 noise_level = 100
@@ -134,10 +139,13 @@ plt.show()
 
 
 
-### Accelerated convergence with operators
-Because the loss function with total variation is non-smooth, it is challenging the achieve sufficient convergence with the gradient descent algorithm. Instead, the primal-dual algorithm from Chambolle and Pock (https://doi.org/10.1007/s10851-010-0251-1) achieves faster convergence. To enable easy implementation of such proximal-based algorithm, operator formulations of the TV calculations are available in PyTV. A simple example is presented below in the case of the denoising of the cameraman image:   
+### Accelerated convergence using gradient operators
+Because the loss function with total variation is non-smooth, it is challenging the achieve sufficient convergence with the gradient descent algorithm. 
+Instead, the primal-dual algorithm from Chambolle and Pock (https://doi.org/10.1007/s10851-010-0251-1) achieves faster convergence. 
+To enable easy implementation of such proximal-based algorithm, the calculations of image gradients are available in PyTV. 
+A simple example is presented below in the case of the denoising of the cameraman image:   
 
-```
+```python
 # A simple version of the Chambolle & Pock algorithm for image denoising
 # Ref: Chambolle, Antonin, and Thomas Pock. "A first-order primal-dual algorithm for convex problems with applications to imaging." Journal of mathematical imaging and vision 40.1 (2011): 120-145.
 
@@ -159,6 +167,75 @@ for it in range(nb_it):
     # Loss function update
     loss_fct[it] = 0.5 * np.sum(np.square(cameraman_estimate - cameraman_noisy)) + regularization * pytv.tv_operators_GPU.compute_L21_norm(D_x)
 ```
+
+<p align="center">
+<img src="https://raw.githubusercontent.com/eboigne/PyTV/main/pytv/media/img_denoising_loss_fct_CP_GD.png" alt="Loss function"/>
+</p>
+
+# PyTV function overview
+
+PyTV provides the following functions:
+
+- Direct CPU and GPU, for quick (sub)-gradient descent algorithms (time not currently supported):
+```python
+use_GPU = True
+
+import numpy as np
+if use_GPU:
+  import pytv.tv_GPU as tv
+else:
+  import pytv.tv_CPU as tv
+
+Nz, N = 10, 100 # Image size 
+img = np.random.rand(Nz, N, N)
+
+# TV values, and sub-gradient arrays
+tv1, G1 = tv.tv_upwind(img)
+tv2, G2 = tv.tv_downwind(img)
+tv3, G3 = tv.tv_centered(img)
+tv4, G4 = tv.tv_hybrid(img)
+```
+- CPU and GPU operators, useful for proximal algorithms (supports time term):
+```python
+use_GPU = True
+
+import numpy as np
+if use_GPU:
+  import pytv.tv_operators_GPU as tv
+else:
+  import pytv.tv_operators_CPU as tv
+
+Nz, N = 10, 100 # Image size 
+M = 2 # Time size
+reg_time = 2**(-5) # Time regularization (lambda_t)
+img = np.random.rand(Nz, M, N, N)
+
+# Discrete gradient: D_img has size (Nz, Nd, M, N, N) where Nd is the number of difference terms
+D_img1 = tv.D_upwind(img, reg_time = reg_time)
+D_img2 = tv.D_downwind(img, reg_time)
+D_img3 = tv.D_centered(img, reg_time)
+D_img4 = tv.D_hybrid(img, reg_time)
+
+# Transposed discrete gradient: D_T_D_img has size (Nz, M, N, N)
+D_T_D_img1 = tv.D_T_upwind(D_img1, reg_time)
+D_T_D_img2 = tv.D_T_downwind(D_img2, reg_time)
+D_T_D_img3 = tv.D_T_centered(D_img3, reg_time)
+D_T_D_img4 = tv.D_T_hybrid(D_img4, reg_time)
+
+# TV values: obtained by computing the L2,1 norm of the image gradient D(img) 
+tv1 = tv.compute_L21_norm(D_img1)
+tv2 = tv.compute_L21_norm(D_img2)
+tv3 = tv.compute_L21_norm(D_img3)
+tv4 = tv.compute_L21_norm(D_img4)
+```
+
+# TV definition
+
+
+<p align="center">
+<img src="https://raw.githubusercontent.com/eboigne/PyTV/main/pytv/media/TV_def.png" alt="TV definition"/>
+<img src="https://raw.githubusercontent.com/eboigne/PyTV/main/pytv/media/TV_table_schemes.png" alt="TV discretization"/>
+</p>
 
 
 # Comments
