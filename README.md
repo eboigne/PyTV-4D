@@ -34,7 +34,7 @@ For a quick installation running the CPU routines only, install numpy and PyTV u
 
 ### CPU & GPU
 
-#####Conda
+##### Conda
 First, install PyTorch following the guidelines [on the official website](https://pytorch.org/). Make sure to install the correct version for your setup to enable GPU computations.  
 
 Then, the PyTV files can be installed as a package using anaconda:  
