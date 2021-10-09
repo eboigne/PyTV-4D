@@ -33,11 +33,20 @@ For a quick installation running the CPU routines only, install numpy and PyTV u
 
 
 ### CPU & GPU
-First, install PyTorch following the guidelines on the official website: https://pytorch.org/. Make sure to install the correct version for your setup to enable GPU computations.  
 
-Then, the PyTV files can installed as a package using anaconda:  
+#####Conda
+First, install PyTorch following the guidelines [on the official website](https://pytorch.org/). Make sure to install the correct version for your setup to enable GPU computations.  
+
+Then, the PyTV files can be installed as a package using anaconda:  
 
 `conda install -c eboigne pytv`
+
+##### Pip
+Alternatively, PyTV can be installed using pip. To do so, install numpy and PyTorch and download the [latest tar release ](https://github.com/eboigne/PyTV/releases) of PyTV. Then, using the downloaded file, run:
+
+`pip install ./PyTV-X.X.X.tar.gz`
+
+If you have trouble with installed dependencies not being recognized with pip, run `pip install --no-deps ./PyTV-X.X.X.tar.gz`. 
 
 ### Testing
 
