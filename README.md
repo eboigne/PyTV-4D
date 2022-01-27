@@ -48,6 +48,11 @@ Alternatively, PyTV can be installed using pip. To do so, install numpy and PyTo
 
 If you have trouble with installed dependencies not being recognized with pip, run `pip install --no-deps ./PyTV-X.X.X.tar.gz`. 
 
+##### Manual installation
+PyTV can also be installed manually with (dependencies need to be set properly):
+
+`python setup.py install`
+
 ### Testing
 
 Once installed, you can run some basic tests on CPU and GPU:
@@ -120,25 +125,6 @@ for it in range(nb_it): # A simple sub-gradient descent algorithm for image deno
     tv, G = pytv.tv.tv_hybrid(cameraman_estimate)
     cameraman_estimate += - step_size * ((cameraman_estimate - cameraman_noisy) + regularization * G)
     loss_fct[it] = 0.5 * np.sum(np.square(cameraman_estimate - cameraman_noisy)) + regularization * tv
-
-plt.figure(1, figsize=[9.5, 3], dpi = 150)
-plt.subplot(1,3,1, title='Truth (no noise)')
-plt.imshow(cameraman_truth, cmap = plt.get_cmap('gray'))
-plt.axis('off')
-plt.subplot(1,3,2, title='Noisy input')
-plt.axis('off')
-plt.imshow(cameraman_noisy, cmap = plt.get_cmap('gray'))
-plt.subplot(1,3,3, title='Algorithm output')
-plt.imshow(cameraman_estimate, cmap = plt.get_cmap('gray'))
-plt.axis('off')
-plt.tight_layout(pad=0.5)
-
-plt.figure(2, figsize=[3, 2], dpi = 75)
-plt.plot(loss_fct)
-plt.xlabel('Iteration')
-plt.ylabel('Loss function')
-plt.tight_layout(pad=0.5)
-plt.show()
 ```
 
 <p align="center">
