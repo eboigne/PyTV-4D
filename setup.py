@@ -46,7 +46,7 @@ from setuptools import setup
 requirements = [
 	'numpy',
     'matplotlib',
-	'pytorch>=1.5.0'
+	# 'pytorch>=1.5.0'
 ]
 
 setup(

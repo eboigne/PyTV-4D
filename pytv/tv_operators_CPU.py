@@ -166,7 +166,7 @@ def D_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, facto
         D_img[:,i_d+1,:-1,:-2,:-2] = - np.sqrt(reg_time) * time_diff[:, :-1, 1:-1, 1:-1]
         
         if isinstance(mask_static, np.ndarray):
-            mask_static = np.tile(mask_static, [Nz, 1, 1, 1])
+            mask_static = np.tile(mask_static, [Nz, M, 1, 1])
             
             D_img_temp = D_img[:,i_d,:,:,:].copy()
             D_img_temp[mask_static] *= np.sqrt(factor_reg_static)
