@@ -1,4 +1,4 @@
-# /*-----------------------------------------------------------------------*\
+    # /*-----------------------------------------------------------------------*\
 # |                                                                         |
 # |                 _____            _______  __      __                    |
 # |                |  __ \          |__   __| \ \    / /                    |
@@ -66,7 +66,10 @@ def compute_L21_norm(D_img):
     else:
         D_img = D_img.cuda()
 
-    out = torch.square(D_img)
+    try:
+        out = torch.square(D_img)
+    except:
+        out = D_img * D_img
     out = torch.sum(out, axis = 1)
     out = torch.sqrt(out)
     out = torch.sum(out)
