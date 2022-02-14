@@ -51,8 +51,8 @@ requirements = [
 
 setup(
     name='PyTV',
-    version='1.0',
-    description='Short description',
+    version='1.0.1',
+    description='',
     license='GNUv3',
     author='Emeric Boigne',
     author_email='emericboigne@gmail.com',
