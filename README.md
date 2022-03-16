@@ -35,7 +35,7 @@ For a quick installation running the CPU routines only, install numpy and PyTV u
 ### CPU & GPU
 
 ##### Conda
-First, install PyTorch following the guidelines [on the official website](https://pytorch.org/). Make sure to install the correct version for your setup to enable GPU computations.  
+First, install PyTorch (version at least 1.5.0) following the guidelines [on the official website](https://pytorch.org/). Make sure to install the correct version for your setup to enable GPU computations.  
 
 Then, the PyTV files can be installed as a package using anaconda:  
 
@@ -238,3 +238,7 @@ tv4 = tv.compute_L21_norm(D_img4)
 - Nz = 2 is a troublesome case, either send data as 2D images, or a 3D chunk of more than 2 images.
 - Time discretization in the operator forms: the discretization scheme used is the same as the spatial scheme for each discretization. For the `centered` scheme that require M>2, the `upwind` scheme is used instead for the time discretization for cases with M=2.
 - The (Nz, M, N, N) data order is prefered to (M, Nz, N, N) since the CT operations can be decomposed easily along z for parallel beam configurations. 
+
+# To implement
+
+- 3D+t for tv_GPU and tv_CPU

@@ -89,7 +89,7 @@ def D_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, facto
     reg_time : float
         The ratio of the regularization parameter in the time direction, versus the x-y plane.
     mask_static : np.ndarray
-        An of dimensions 1 x 1 x N x N serving as a mask to indicate pixels on which to enforce a different
+        An array of dimensions 1 x 1 x N x N serving as a mask to indicate pixels on which to enforce a different
         time regularization parameter, for instance used to enforce more static regions in the image.
     factor_reg_static : float
         The regularization parameter to compute in the region of the image specified by mask_static.
@@ -191,17 +191,16 @@ def D_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, facto
         D_img[:,i_d+1,:-1,:-2,:-2] = - np.sqrt(reg_time) * time_diff[:, :-1, 1:-1, 1:-1]
 
         if isinstance(mask_static, np.ndarray):
-            mask_static = np.tile(mask_static, [Nz, 1, 1, 1])
-
-            D_img_temp = D_img[:,i_d,:,:,:].copy()
-            D_img_temp[mask_static] *= np.sqrt(factor_reg_static)
+            mask_static_temp = torch.as_tensor(np.tile(mask_static.copy(), [Nz, M, 1, 1]))
+            D_img_temp = torch.clone(D_img[:,i_d,:,:,:])
+            D_img_temp[mask_static_temp] *= np.sqrt(factor_reg_static)
             D_img[:,i_d,:,:,:] = D_img_temp
 
-            D_img_temp = D_img[:,i_d+1,:,:,:].copy()
-            D_img_temp[mask_static] *= np.sqrt(factor_reg_static)
+            D_img_temp = torch.clone(D_img[:,i_d+1,:,:,:])
+            D_img_temp[mask_static_temp] *= np.sqrt(factor_reg_static)
             D_img[:,i_d+1,:,:,:] = D_img_temp
 
-            del D_img_temp
+            del D_img_temp, mask_static_temp
         i_d += 2
         del time_diff
 
@@ -554,7 +553,7 @@ def D_T_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
     kernel_row = torch.as_tensor(np.reshape(kernel_row, (1,1)+kernel_row.shape)).cuda()
 
     if halve_tv_at_both_end and M > 2:
-        img = img.copy()
+        img = torch.clone(img)
         img[:,:,0,:,:] /= 2.0
         img[:,:,-1,:,:] /= 2.0
 
@@ -616,6 +615,10 @@ def D_T_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
     if reg_time > 0 and M > 1:
         D_T_img_time_update = torch.zeros_like(D_T_img)
 
+        if isinstance(mask_static, np.ndarray):
+            mask_static_temp = torch.as_tensor(np.tile(mask_static, [Nz, 6, M, 1, 1]))
+            img[mask_static_temp] *= np.sqrt(factor_reg_static)
+
         # Forward time term
         D_T_img_time_update[:,1:-1,:-1,:-1] += np.sqrt(reg_time) * (img[:,i_d,:-2,:-1,:-1]-img[:,i_d,1:-1,:-1,:-1])
         D_T_img_time_update[:,0,:-1,:-1] += -np.sqrt(reg_time) * img[:,i_d,0,:-1,:-1]
@@ -627,10 +630,6 @@ def D_T_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
         D_T_img_time_update[:,0,1:-1,1:-1] += np.sqrt(reg_time) * img[:,i_d,0,:-2,:-2]
         D_T_img_time_update[:,-1,1:-1,1:-1] += -np.sqrt(reg_time) * img[:,i_d,-2,:-2,:-2]
         i_d += 1
-
-        if isinstance(mask_static, np.ndarray):
-            mask_static = np.tile(mask_static, [Nz, M, 1, 1])
-            D_T_img_time_update[mask_static] *= np.sqrt(factor_reg_static)
 
         D_T_img += D_T_img_time_update
         del D_T_img_time_update
@@ -806,7 +805,6 @@ def D_T_upwind(img, reg_z_over_reg = 1.0, reg_time = 0, return_pytorch_tensor = 
     else:
         # Forward row term
         # D_T_img[:,:,1:-1,:-1] += img[:,0,:,:-2,:-1]-img[:,0,:,1:-1,:-1] # Equivalent but 15-20% slower
-        # img tensor of size: (N,Cin,D,H,W), N: batch size, Cin: number of input channels.
         D_T_img[:,:,1:-1,:-1] += torch.nn.functional.conv3d(img[:,0:1,:,:-1,:-1], kernel_row, bias=None, stride=1, padding = 0)[:,0,:,:,:]
         D_T_img[:,:,0,:-1] += -img[:,0,:,0,:-1]
         D_T_img[:,:,-1,:-1] += img[:,0,:,-2,:-1]
