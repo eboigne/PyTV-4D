@@ -76,7 +76,7 @@ def compute_L21_norm(D_img):
 
     return(out.cpu().detach().numpy())
 
-def D_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, factor_reg_static = 0, return_pytorch_tensor=False, halve_tv_at_both_end = False):
+def D_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, factor_reg_static = 0, return_pytorch_tensor=False):
     '''
     Calculates the output of the input image img by the operator D (gradient discretized using hybrid scheme)
 
@@ -203,10 +203,6 @@ def D_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, facto
             del D_img_temp, mask_static_temp
         i_d += 2
         del time_diff
-
-    if halve_tv_at_both_end and M > 2:
-        D_img[:, 0, :, :] /= 2.0
-        D_img[:, -1, :, :] /= 2.0
 
     del row_diff_tensor, col_diff_tensor, img_tensor, kernel_row, kernel_col
 
@@ -505,7 +501,7 @@ def D_centered(img, reg_z_over_reg = 1.0, reg_time = 0, return_pytorch_tensor = 
 
     return(D_img)
 
-def D_T_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, factor_reg_static = 0, return_pytorch_tensor=False, halve_tv_at_both_end = False):
+def D_T_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, factor_reg_static = 0, return_pytorch_tensor=False):
     '''
     Calculates the output of the input image img by the operator D^T (tranposed gradient discretized using hybrid scheme)
 
@@ -551,11 +547,6 @@ def D_T_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
 
     kernel_row = np.array([[[1],[-1]]]).astype('float32')
     kernel_row = torch.as_tensor(np.reshape(kernel_row, (1,1)+kernel_row.shape)).cuda()
-
-    if halve_tv_at_both_end and M > 2:
-        img = torch.clone(img)
-        img[:,:,0,:,:] /= 2.0
-        img[:,:,-1,:,:] /= 2.0
 
     if Nz > 1:
         # Forward row term
@@ -733,7 +724,6 @@ def D_T_downwind(img, reg_z_over_reg = 1.0, reg_time = 0, return_pytorch_tensor 
             D_T_img[:,1:-1,1:-1,1:-1] += np.sqrt(reg_time) * (img[:,i_d,2:,1:-1,1:-1] - img[:,i_d,1:-1,1:-1,1:-1])
             D_T_img[:,0,1:-1,1:-1] += np.sqrt(reg_time) * img[:,i_d,1,1:-1,1:-1]
             D_T_img[:,-1,1:-1,1:-1] += -np.sqrt(reg_time) * img[:,i_d,-1,1:-1,1:-1]
-
         i_d += 1
 
     del img, kernel_row, kernel_col

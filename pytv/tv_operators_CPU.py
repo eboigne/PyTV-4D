@@ -67,7 +67,7 @@ def compute_L21_norm(D_img):
 
     return(out)
 
-def D_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, factor_reg_static = 0, halve_tv_at_both_end = False):
+def D_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, factor_reg_static = 0):
     '''
     Calculates the output of the input image img by the operator D (gradient discretized using hybrid scheme)
 
@@ -177,14 +177,10 @@ def D_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, facto
             D_img[:,i_d+1,:,:,:] = D_img_temp
         
         i_d += 2
-        
-    if halve_tv_at_both_end and M > 2:
-        D_img[:, 0, :, :] /= 2.0
-        D_img[:, -1, :, :] /= 2.0
 
     return (D_img/np.sqrt(2.0))
 
-def D_downwind(img, reg_z_over_reg = 1.0, reg_time = 0):
+def D_downwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, factor_reg_static = 0):
     '''
     Calculates the output of the input image img by the operator D (gradient discretized using downwind scheme)
 
@@ -237,11 +233,18 @@ def D_downwind(img, reg_z_over_reg = 1.0, reg_time = 0):
         i_d += 1
 
     if reg_time > 0 and M > 1:
-        # f^k-1 - f^k
+        # The intensity differences across times (Downwind / Backward)
         if Nz > 2:
             D_img[1:-1, i_d, 1:, 1:-1, 1:-1] = np.sqrt(reg_time) * (img[1:-1, :-1, 1:-1, 1:-1] - img[1:-1, 1:, 1:-1, 1:-1])
         else:
             D_img[:, i_d, 1:, 1:-1, 1:-1] = np.sqrt(reg_time) * (img[:, :-1, 1:-1, 1:-1] - img[:, 1:, 1:-1, 1:-1])
+
+        if isinstance(mask_static, np.ndarray):
+            mask_static = np.tile(mask_static, [Nz, M, 1, 1])
+            D_img_temp = D_img[:,i_d,:,:,:].copy()
+            D_img_temp[mask_static] *= np.sqrt(factor_reg_static)
+            D_img[:,i_d,:,:,:] = D_img_temp
+
         i_d += 1
 
     return D_img
@@ -376,7 +379,7 @@ def D_centered(img, reg_z_over_reg = 1.0, reg_time = 0):
 
     return (D_img)
 
-def D_T_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, factor_reg_static = 0, halve_tv_at_both_end = False):
+def D_T_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, factor_reg_static = 0):
     '''
     Calculates the output of the input image img by the operator D^T (tranposed gradient discretized using hybrid scheme)
 
@@ -409,11 +412,6 @@ def D_T_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
     N = img.shape[-1]
 
     D_T_img = np.zeros([Nz, M, N, N])
-
-    if halve_tv_at_both_end and M > 2:
-        img = img.copy()
-        img[:,:,0,:,:] /= 2.0
-        img[:,:,-1,:,:] /= 2.0
 
     if Nz > 1:
         # Forward row term
@@ -494,7 +492,7 @@ def D_T_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
 
     return(D_T_img/np.sqrt(2.0))
 
-def D_T_downwind(img, reg_z_over_reg = 1.0, reg_time = 0):
+def D_T_downwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, factor_reg_static = 0):
     '''
     Calculates the output of the input image img by the operator D^T (tranposed gradient discretized using downwind scheme)
 
@@ -552,16 +550,24 @@ def D_T_downwind(img, reg_z_over_reg = 1.0, reg_time = 0):
         i_d += 1
 
     if reg_time > 0 and M > 1:
+        D_T_img_time_update = np.zeros_like(D_T_img)
+
         # Backward time term
         if Nz > 2:
-            D_T_img[1:-1,1:-1,1:-1,1:-1] += np.sqrt(reg_time) * (img[1:-1,i_d,2:,1:-1,1:-1] - img[1:-1,i_d,1:-1,1:-1,1:-1])
-            D_T_img[1:-1,0,1:-1,1:-1] += np.sqrt(reg_time) * img[1:-1,i_d,1,1:-1,1:-1]
-            D_T_img[1:-1,-1,1:-1,1:-1] += -np.sqrt(reg_time) * img[1:-1,i_d,-1,1:-1,1:-1]
+            D_T_img_time_update[1:-1,1:-1,1:-1,1:-1] += np.sqrt(reg_time) * (img[1:-1,i_d,2:,1:-1,1:-1] - img[1:-1,i_d,1:-1,1:-1,1:-1])
+            D_T_img_time_update[1:-1,0,1:-1,1:-1] += np.sqrt(reg_time) * img[1:-1,i_d,1,1:-1,1:-1]
+            D_T_img_time_update[1:-1,-1,1:-1,1:-1] += -np.sqrt(reg_time) * img[1:-1,i_d,-1,1:-1,1:-1]
         else:
-            D_T_img[:,1:-1,1:-1,1:-1] += np.sqrt(reg_time) * (img[:,i_d,2:,1:-1,1:-1] - img[:,i_d,1:-1,1:-1,1:-1])
-            D_T_img[:,0,1:-1,1:-1] += np.sqrt(reg_time) * img[:,i_d,1,1:-1,1:-1]
-            D_T_img[:,-1,1:-1,1:-1] += -np.sqrt(reg_time) * img[:,i_d,-1,1:-1,1:-1]
+            D_T_img_time_update[:,1:-1,1:-1,1:-1] += np.sqrt(reg_time) * (img[:,i_d,2:,1:-1,1:-1] - img[:,i_d,1:-1,1:-1,1:-1])
+            D_T_img_time_update[:,0,1:-1,1:-1] += np.sqrt(reg_time) * img[:,i_d,1,1:-1,1:-1]
+            D_T_img_time_update[:,-1,1:-1,1:-1] += -np.sqrt(reg_time) * img[:,i_d,-1,1:-1,1:-1]
         i_d += 1
+
+        if isinstance(mask_static, np.ndarray):
+            mask_static = np.tile(mask_static, [Nz, M, 1, 1])
+            D_T_img_time_update[mask_static] *= np.sqrt(factor_reg_static)
+
+        D_T_img += D_T_img_time_update
 
     return(D_T_img)
 
