@@ -56,8 +56,8 @@ def run_CPU_tests(N = 100, Nz = 20, M = [2, 3, 4]):
     A = np.zeros([1,1,5,5])
     A[0,0,2,2] = 1.0
     # M = [4,]
-    # tv_schemes = ['downwind', 'upwind', 'centered', 'hybrid']
-    tv_schemes = ['downwind']
+    # tv_schemes = ['downwind', 'upwind', 'central', 'hybrid']
+    tv_schemes = ['central']
     print('\nRunning CPU tests:')
     for tv_scheme in tv_schemes:
         print('\nCPU test for TV scheme: '+str(tv_scheme))
@@ -79,7 +79,7 @@ def run_GPU_tests(N = 100, Nz = 20, M = [2, 3, 4]):
     A function that runs GPU tests to check PyTV is working properly.
     '''
 
-    tv_schemes = ['downwind', 'upwind', 'centered', 'hybrid']
+    tv_schemes = ['downwind', 'upwind', 'central', 'hybrid']
     print('\nRunning GPU tests:')
     for tv_scheme in tv_schemes:
         print('\nGPU test for TV scheme: '+str(tv_scheme))
@@ -120,7 +120,7 @@ def test_operator_transpose(tv_scheme, N = 100, Nz = 20, M = [2, 3, 4], toleranc
     Parameters
     ----------
     tv_scheme : str
-        A string of the tested TV scheme, among 'upwind', 'downwind', 'centered' or 'hybrid'
+        A string of the tested TV scheme, among 'upwind', 'downwind', 'central' or 'hybrid'
     '''
 
     # 2D CPU Transpose
@@ -196,7 +196,7 @@ def test_2D_to_3D(tv_scheme, N = 100, Nz = 20, tolerance = 1e-5, cpu_only = Fals
     Parameters
     ----------
     tv_scheme : str
-        A string of the tested TV scheme, among 'upwind', 'downwind', 'centered' or 'hybrid'
+        A string of the tested TV scheme, among 'upwind', 'downwind', 'central' or 'hybrid'
     '''
 
     if Nz < 5:
@@ -208,7 +208,7 @@ def test_2D_to_3D(tv_scheme, N = 100, Nz = 20, tolerance = 1e-5, cpu_only = Fals
     # if tv_scheme == 'downwind':
     #     factor_tv = 1.0 / (Nz - 1)
 
-    # if tv_scheme == 'downwind' or tv_scheme ==  'centered':
+    # if tv_scheme == 'downwind' or tv_scheme ==  'central':
         # factor_tv = 1.0 / (Nz - 2)
     #     factor_tv = 1.0 / (Nz)
     # elif tv_scheme == 'upwind' or tv_scheme == 'hybrid':
@@ -221,7 +221,7 @@ def test_2D_to_3D(tv_scheme, N = 100, Nz = 20, tolerance = 1e-5, cpu_only = Fals
         (tv1_3D, G1_3D) = eval('tv_CPU.tv_'+tv_scheme+'(img_3D, match_2D_form = True)')
     else:
         (tv1_3D, G1_3D) = eval('tv_CPU.tv_'+tv_scheme+'(img_3D)')
-    print(tv1, tv1_3D, tv1_3D * factor_tv, factor_tv)
+    # print(tv1, tv1_3D, tv1_3D * factor_tv, factor_tv)
     assert test_equal([tv1, tv1_3D * factor_tv], tolerance = tolerance), 'CPU TV values are not equal'
     assert test_equal([G1, np.reshape(G1_3D[1], G1.shape)], tolerance = tolerance), 'CPU Sub-gradient arrays are not equal'
 
@@ -274,7 +274,7 @@ def test_tv_G_D_DT_3D(tv_scheme, N = 100, Nz = 20, tolerance = 1e-5, cpu_only = 
     Parameters
     ----------
     tv_scheme : str
-        A string of the tested TV scheme, among 'upwind', 'downwind', 'centered' or 'hybrid'
+        A string of the tested TV scheme, among 'upwind', 'downwind', 'central' or 'hybrid'
     '''
 
     img = np.random.rand(Nz, N, N)
@@ -330,7 +330,7 @@ def test_tv_D_DT_4D(tv_scheme, N = 100, Nz = 20, M = [2, 3, 4], reg_time = 1.0, 
     Parameters
     ----------
     tv_scheme : str
-        A string of the tested TV scheme, among 'upwind', 'downwind', 'centered' or 'hybrid'
+        A string of the tested TV scheme, among 'upwind', 'downwind', 'central' or 'hybrid'
     '''
 
     time1, time2, time3, time4 = 0, 0, 0, 0
@@ -353,7 +353,7 @@ def test_tv_D_DT_4D(tv_scheme, N = 100, Nz = 20, M = [2, 3, 4], reg_time = 1.0, 
         D3 = eval('tv_operators_CPU.D_'+tv_scheme+'(img, reg_time = '+str(reg_time)+')')
         tv3 = eval('tv_operators_CPU.compute_L21_norm(D3)')
         time3 += time.time() - tic
-        DT_D3 = eval('tv_operators_GPU.D_T_'+tv_scheme+'(D3, reg_time = '+str(reg_time)+')')
+        DT_D3 = eval('tv_operators_CPU.D_T_'+tv_scheme+'(D3, reg_time = '+str(reg_time)+')')
 
         if not cpu_only:
             # Operator GPU implementation
@@ -365,7 +365,7 @@ def test_tv_D_DT_4D(tv_scheme, N = 100, Nz = 20, M = [2, 3, 4], reg_time = 1.0, 
             D4 = D4.cpu().detach().numpy()
 
         if cpu_only:
-            print(tv1,tv3)
+            # print(tv1,tv3)
             assert test_equal([tv1, tv3], tolerance = tolerance), 'TV values are not equal'
             del D3, DT_D3
         else:
