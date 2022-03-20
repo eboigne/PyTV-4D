@@ -42,10 +42,9 @@
 
 
 import numpy as np
-# import pytv.tv_2d_CPU
-import pytv
+import pytv.tv_2d_CPU
 
-def tv_hybrid(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static = False, factor_reg_static = 0, match_2D_form = False):
+def tv_hybrid(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, match_2D_form = False):
     '''
     Calculates the total variation and a subgradient of the input image img using the hybrid gradient discretization
 
@@ -165,7 +164,7 @@ def tv_hybrid(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static 
 
     return (tv, G)
 
-def tv_downwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static = False, factor_reg_static = 0):
+def tv_downwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0):
     '''
     Calculates the total variation and a subgradient of the input image img using the downwind gradient discretization
 
@@ -191,34 +190,80 @@ def tv_downwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_stati
     if mask != []:
         img[~mask] = 0
     Nz = img.shape[0]
-    M = img.shape[1]
+    
+    # The intensity differences across rows.
+    row_diff = np.zeros_like(img)
+    if Nz > 1:
+        row_diff[:-1, :, :-1, :-1] = img[:-1, :, 1:, :-1] - img[:-1, :, :-1, :-1]
+    else:
+        row_diff[:, :, :-1, :-1] = img[:, :, 1:, :-1] - img[:, :, :-1, :-1]
 
-    D_img = pytv.tv_operators_CPU.D_downwind(img, reg_z_over_reg = reg_z_over_reg, reg_time = reg_time, mask_static = mask_static, factor_reg_static = factor_reg_static)
-    tv, grad_norms = pytv.tv_operators_CPU.compute_L21_norm(D_img, return_array=True)
+    # The intensity differences across columns.
+    col_diff = np.zeros_like(img)
+    if Nz > 1:
+        col_diff[:-1, :, :-1, :-1] = img[:-1, :, :-1, 1:] - img[:-1, :, :-1, :-1]
+    else:
+        col_diff[:, :, :-1, :-1] = img[:, :, :-1, 1:] - img[:, :, :-1, :-1]
 
+    # The intensity differences across slices.
+    slice_diff = np.zeros_like(img)
+    if Nz > 1:
+        slice_diff[:-1, :, :-1, :-1] = np.sqrt(reg_z_over_reg) * (img[1:, :, :-1, :-1] - img[:-1, :, :-1, :-1])
+
+    # The intensity differences across times.
+    time_diff = np.zeros_like(img)
+    # if Nz > 1:
+    #     time_diff[:-1, :-1, :-1, :-1] = np.sqrt(reg_time) * (img[:-1, 1:, :-1, :-1] - img[:-1, :-1, :-1, :-1])
+    # else:
+    # time_diff[:, :-1, 1:-1, 1:-1] = np.sqrt(reg_time) * (img[:, 1:, 1:-1, 1:-1] - img[:, :-1, 1:-1, 1:-1])
+    time_diff[:, :-1, :-1, :-1] = np.sqrt(reg_time) * (img[:, 1:, :-1, :-1] - img[:, :-1, :-1, :-1])
+
+    # D_img[:, i_d, 1:, 1:-1, 1:-1] = np.sqrt(reg_time) * (img[:, :-1, 1:-1, 1:-1] - img[:, 1:, 1:-1, 1:-1])
+
+    print(img.shape)
+
+    #  Compute the total variation.
+    eps = 0
+    grad_norms = np.zeros_like(img)
+    if Nz > 1:
+        grad_norms[:-1, :, :-1, :-1] = np.square(row_diff[1:, :, :-1, 1:])+np.square(col_diff[1:, :, 1:, :-1])+np.square(slice_diff[:-1, :, 1:, 1:])+eps
+        # grad_norms = np.sqrt(grad_norms)
+        # grad_norms[1:-1, 1:, :-1, :-1] += np.square(time_diff[1:-1, :-1, 1:, 1:])
+        grad_norms[:,:-1,:-2,:-2] += np.square(time_diff[:, :-1, 1:-1, 1:-1])
+        # grad_norms[:, :-1, :-2, :-2] += np.square(time_diff[:, :-1, 1:-1, 1:-1])
+    else:
+        grad_norms[:, :, :-1, :-1] = np.square(row_diff[:, :, :-1, 1:])+np.square(col_diff[:, :, 1:, :-1])+np.square(slice_diff[:, :, 1:, 1:])+eps
+        # grad_norms[:, 1:, :-1, :-1] += np.square(time_diff[:, :-1, 1:, 1:])
+        grad_norms[:,:-1,:-2,:-2] += np.square(time_diff[:, :-1, 1:-1, 1:-1])
+        # grad_norms[:, :-1, :-1, :-1] += np.square(time_diff[:, :-1, :-1, :-1])
+
+    # grad_norms[:, 1:, 1:-1, 1:-1] += np.square(time_diff[:, :-1, 1:-1, 1:-1])
+    grad_norms = np.sqrt(grad_norms)
+
+    tv = np.sum(grad_norms)
+
+    # Find a subgradient.
+    G = np.zeros_like(img)
     # When non-differentiable, set to 0.
     grad_norms[grad_norms == 0] = np.inf # not necessary if eps > 0
 
-    # Careful when reading math: D_img[:,0,:,:,:] does not give r_{m,n,p,q}, but r_{m-1,n,p,q}
-    G = np.zeros_like(img)
-    G[:, :, :, :] += (D_img[:,0,:,:,:]+D_img[:,1,:,:,:]) / grad_norms[:, :, :, :]
-    G[:, :, :-1, :] += -D_img[:,0,:,1:,:] / grad_norms[:, :, 1:, :]
-    G[:, :, :, :-1] += -D_img[:,1,:,:,1:] / grad_norms[:, :, :, 1:]
-
-    i_d = 2
-    if Nz > 1 and reg_z_over_reg > 0:
-        G[:, :, :, :] += D_img[:,i_d,:,:,:] / grad_norms[:, :, :, :]
-        G[:-1, :, :, :] += -D_img[1:,i_d,:,:,:] / grad_norms[1:, :, :, :]
-        i_d += 1
-
-    if reg_time > 0 and M > 1:
-        G[:, :, :, :] += D_img[:,i_d,:,:,:] / grad_norms[:, :, :, :]
-        G[:, :-1, :, :] += -D_img[:,i_d,1:,:,:] / grad_norms[:, 1:, :, :]
-        i_d += 1
+    if Nz > 1: #TODO: Check time_diff analytically. Numeric convergence test is ok
+        G[1:, :, 1:, 1:] += (row_diff[1:, :, :-1, 1:] + col_diff[1:, :, 1:, :-1] + slice_diff[:-1, :, 1:, 1:]) / grad_norms[:-1, :, :-1, :-1]
+        G[1:, 1:, 1:, 1:] += time_diff[1:, :-1, 1:, 1:] / grad_norms[:-1, :-1, :-1, :-1]
+        G[1:, :, :-1, 1:] += - row_diff[1:, :, :-1, 1:] / grad_norms[:-1, :, :-1, :-1]
+        G[1:, :, 1:, :-1] += - col_diff[1:, :, 1:, :-1] / grad_norms[:-1, :, :-1, :-1]
+        G[:-1, :, 1:, 1:] += - slice_diff[:-1, :, 1:, 1:] / grad_norms[:-1, :, :-1, :-1]
+        G[1:, :, 1:, 1:] += - time_diff[1:, :, 1:, 1:] / grad_norms[:-1, :, :-1, :-1]
+    else:
+        G[:, :, 1:, 1:] = (row_diff[:, :, :-1, 1:] + col_diff[:, :, 1:, :-1]) / grad_norms[:, :, :-1, :-1]
+        G[:, 1:, 1:, 1:] += time_diff[:, :-1, 1:, 1:] / grad_norms[:, :-1, :-1, :-1]
+        G[:, :, :-1, 1:] += - row_diff[:, :, :-1, 1:] / grad_norms[:, :, :-1, :-1]
+        G[:, :, 1:, :-1] += - col_diff[:, :, 1:, :-1] / grad_norms[:, :, :-1, :-1]
+        G[:, :, 1:, 1:] += - time_diff[:, :, 1:, 1:] / grad_norms[:, :, :-1, :-1]
 
     return (tv, G)
 
-def tv_upwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static = False, factor_reg_static = 0):
+def tv_upwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0):
     '''
     Calculates the total variation and a subgradient of the input image img using the upwind gradient discretization
 
@@ -242,29 +287,49 @@ def tv_upwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static 
     if mask != []:
         img[~mask] = 0
     Nz = img.shape[0]
-    M = img.shape[1]
+    
+    # The intensity differences across rows.
+    row_diff = np.zeros_like(img)
+    if Nz > 1:
+        row_diff[:-1, :, :-1, :-1] = img[:-1, :, 1:, :-1] - img[:-1, :, :-1, :-1]
+    else:
+        row_diff[:, :, :-1, :-1] = img[:, :, 1:, :-1] - img[:, :, :-1, :-1]
 
-    D_img = pytv.tv_operators_CPU.D_upwind(img, reg_z_over_reg = reg_z_over_reg, reg_time = reg_time, mask_static = mask_static, factor_reg_static = factor_reg_static)
-    tv, grad_norms = pytv.tv_operators_CPU.compute_L21_norm(D_img, return_array=True)
+    # The intensity differences across columns.
+    col_diff = np.zeros_like(img)
+    if Nz > 1:
+        col_diff[:-1, :, :-1, :-1] = img[:-1, :, :-1, 1:] - img[:-1, :, :-1, :-1]
+    else:
+        col_diff[:, :, :-1, :-1] = img[:, :, :-1, 1:] - img[:, :, :-1, :-1]
 
+    # The intensity differences across slices.
+    slice_diff = np.zeros_like(img)
+    if Nz > 1:
+        slice_diff[:-1, :, :-1, :-1] = np.sqrt(reg_z_over_reg) * (img[1:, :, :-1, :-1] - img[:-1, :, :-1, :-1])
+
+    # The intensity differences across times.
+    time_diff = np.zeros_like(img)
+    # if Nz > 1:
+    #     time_diff[:-1, :-1, :-1, :-1] = np.sqrt(reg_time) * (img[:-1, 1:, :-1, :-1] - img[:-1, :-1, :-1, :-1])
+    # else:
+    time_diff[:, :-1, :-1, :-1] = np.sqrt(reg_time) * (img[:, 1:, :-1, :-1] - img[:, :-1, :-1, :-1])
+
+    #  Compute the total variation.
+    eps = 0
+    grad_norms = np.sqrt(np.square(row_diff)+np.square(col_diff)+np.square(slice_diff)+np.square(time_diff)+eps)
+    tv = np.sum(grad_norms)
+
+    # Find a subgradient.
+    G = np.zeros_like(img)
     # When non-differentiable, set to 0.
     grad_norms[grad_norms == 0] = np.inf # not necessary if eps > 0
 
-    G = np.zeros_like(img)
-    G[:, :, :, :] += - (D_img[:,0,:,:,:]+D_img[:,1,:,:,:]) / grad_norms[:, :, :, :]
-    G[:, :, 1:, :] += D_img[:,0,:,:-1,:] / grad_norms[:, :, :-1, :]
-    G[:, :, :, 1:] += D_img[:,1,:,:,:-1] / grad_norms[:, :, :, :-1]
-
-    i_d = 2
-    if Nz > 1 and reg_z_over_reg > 0:
-        G[:, :, :, :] += - D_img[:,i_d,:,:,:] / grad_norms[:, :, :, :]
-        G[1:, :, :, :] += D_img[:-1,i_d,:,:,:] / grad_norms[:-1, :, :, :]
-        i_d += 1
-
-    if reg_time > 0 and M > 1:
-        G[:, :, :, :] += - D_img[:,i_d,:,:,:] / grad_norms[:, :, :, :]
-        G[:, 1:, :, :] += D_img[:,i_d,:-1,:,:] / grad_norms[:, :-1, :, :]
-        i_d += 1
+    # TODO: Check time_diff analytically. Numeric convergence test is ok
+    G[:, :, :-1, :-1] = - (row_diff+col_diff+slice_diff+time_diff)[:, :, :-1, :-1] / grad_norms[:, :, :-1, :-1]
+    G[:, :, 1:, :-1] += row_diff[:, :, :-1, :-1] / grad_norms[:, :, :-1, :-1]
+    G[:, :, :-1, 1:] += col_diff[:, :, :-1, :-1] / grad_norms[:, :, :-1, :-1]
+    G[1:, :, :-1, :-1] += slice_diff[:-1, :, :-1, :-1] / grad_norms[:-1, :, :-1, :-1]
+    G[:, 1:, :-1, :-1] += time_diff[:, 1:, :-1, :-1] / grad_norms[:, 1:, :-1, :-1]
 
     return (tv, G)
 

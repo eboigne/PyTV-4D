@@ -50,17 +50,29 @@ def run_CPU_tests(N = 100, Nz = 20, M = [2, 3, 4]):
     A function that runs CPU tests to check PyTV is working properly.
     '''
 
+
+    B = np.random.rand(10,10,50,50)
+
+    A = np.zeros([1,1,5,5])
+    A[0,0,2,2] = 1.0
     # M = [4,]
     # tv_schemes = ['downwind', 'upwind', 'centered', 'hybrid']
-    tv_schemes = ['downwind']#, 'upwind']
+    tv_schemes = ['downwind']
     print('\nRunning CPU tests:')
     for tv_scheme in tv_schemes:
         print('\nCPU test for TV scheme: '+str(tv_scheme))
+        test_operator_transpose(tv_scheme, cpu_only = True, N = N, Nz = Nz)
         time_3D = test_tv_G_D_DT_3D(tv_scheme, cpu_only = True, N = N, Nz = Nz)
         test_2D_to_3D(tv_scheme, cpu_only = True, N = N, Nz = Nz)
+        time_4D = test_tv_D_DT_4D(tv_scheme, cpu_only = True, N = N, Nz = 1, M = M)
         time_4D = test_tv_D_DT_4D(tv_scheme, cpu_only = True, N = N, Nz = Nz, M = M)
-        test_operator_tranpose(tv_scheme, cpu_only = True, N = N, Nz = Nz)
+        tv, G = eval('tv_CPU.tv_'+tv_scheme+'(A)')
+        print('\nTV(A) = '+str(tv))
+        print('A subgradient of TV at A is:\n'+str(G))
     print('\nPassed all CPU tests successfully')
+    # tv1, _ = tv_CPU.tv_upwind(B)
+    # tv2, _ = tv_CPU.tv_downwind(B)
+    # print(tv1, tv2)
 
 def run_GPU_tests(N = 100, Nz = 20, M = [2, 3, 4]):
     '''
@@ -73,8 +85,9 @@ def run_GPU_tests(N = 100, Nz = 20, M = [2, 3, 4]):
         print('\nGPU test for TV scheme: '+str(tv_scheme))
         time_3D = test_tv_G_D_DT_3D(tv_scheme, N = N, Nz = Nz)
         test_2D_to_3D(tv_scheme, N = N, Nz = Nz)
+        time_4D = test_tv_D_DT_4D(tv_scheme, N = N, Nz = 1, M = M)
         time_4D = test_tv_D_DT_4D(tv_scheme, N = N, Nz = Nz, M = M)
-        test_operator_tranpose(tv_scheme, N = N, Nz = Nz, M = M)
+        test_operator_transpose(tv_scheme, N = N, Nz = Nz, M = M)
     print('\nPassed all GPU tests successfully')
 
 def test_equal(list, tolerance = 1e-5):
@@ -100,7 +113,7 @@ def test_equal(list, tolerance = 1e-5):
         test = test and np.allclose(array, mean_array, rtol=tolerance, atol=tolerance, equal_nan=True)
     return test
 
-def test_operator_tranpose(tv_scheme, N = 100, Nz = 20, M = [2, 3, 4], tolerance = 1e-4, cpu_only = False, n_test = 1):
+def test_operator_transpose(tv_scheme, N = 100, Nz = 20, M = [2, 3, 4], tolerance = 1e-4, reg_time = 1.0, cpu_only = False, n_test = 1):
     '''
     A function that tests whether the implemented gradients functions D and D_T for the provided scheme are transposed.
 
@@ -139,7 +152,6 @@ def test_operator_tranpose(tv_scheme, N = 100, Nz = 20, M = [2, 3, 4], tolerance
         D_T = lambda y: eval('tv_operators_GPU.D_T_'+tv_scheme+'(y, reg_z_over_reg = 0)')
         assert test_transpose(D, D_T, tolerance = tolerance, n_test = n_test, nz = Nz), '3D GPU operators (no reg z): D and D_T not adjunct'
 
-    reg_time = 2.0**(-3)
     for this_M in M:
 
         # 2D & time CPU Transpose
@@ -192,11 +204,16 @@ def test_2D_to_3D(tv_scheme, N = 100, Nz = 20, tolerance = 1e-5, cpu_only = Fals
     img = np.random.rand(1,1,N,N)
     img_3D = np.tile(img, [Nz, 1, 1, 1])
 
-    factor_tv = 1.0
-    if tv_scheme == 'downwind' or tv_scheme ==  'centered':
-        factor_tv = 1.0 / (Nz - 2)
-    elif tv_scheme == 'upwind' or tv_scheme == 'hybrid':
-        factor_tv = 1.0 / (Nz - 1)
+    factor_tv = 1.0 / Nz
+    # if tv_scheme == 'downwind':
+    #     factor_tv = 1.0 / (Nz - 1)
+
+    # if tv_scheme == 'downwind' or tv_scheme ==  'centered':
+        # factor_tv = 1.0 / (Nz - 2)
+    #     factor_tv = 1.0 / (Nz)
+    # elif tv_scheme == 'upwind' or tv_scheme == 'hybrid':
+    #     # factor_tv = 1.0 / (Nz - 1)
+    #     factor_tv = 1.0 / (Nz)
 
     # Direct CPU implementation
     (tv1, G1) = eval('tv_CPU.tv_'+tv_scheme+'(img)')
@@ -204,6 +221,7 @@ def test_2D_to_3D(tv_scheme, N = 100, Nz = 20, tolerance = 1e-5, cpu_only = Fals
         (tv1_3D, G1_3D) = eval('tv_CPU.tv_'+tv_scheme+'(img_3D, match_2D_form = True)')
     else:
         (tv1_3D, G1_3D) = eval('tv_CPU.tv_'+tv_scheme+'(img_3D)')
+    print(tv1, tv1_3D, tv1_3D * factor_tv, factor_tv)
     assert test_equal([tv1, tv1_3D * factor_tv], tolerance = tolerance), 'CPU TV values are not equal'
     assert test_equal([G1, np.reshape(G1_3D[1], G1.shape)], tolerance = tolerance), 'CPU Sub-gradient arrays are not equal'
 
@@ -347,7 +365,7 @@ def test_tv_D_DT_4D(tv_scheme, N = 100, Nz = 20, M = [2, 3, 4], reg_time = 1.0, 
             D4 = D4.cpu().detach().numpy()
 
         if cpu_only:
-            print(tv1, tv3)
+            print(tv1,tv3)
             assert test_equal([tv1, tv3], tolerance = tolerance), 'TV values are not equal'
             del D3, DT_D3
         else:
@@ -406,6 +424,37 @@ def test_transpose(operator, operator_transposed, n_rays = 100, n_test = 5, tole
             print('Transposition test: FAILED')
 
     return res
+
+def test_subgradient_descent(tv_scheme, N = 20, Nz = 5, M = 3, tolerance = 1e-5, cpu_only = False):
+
+    import tifffile, os
+    path_save = os.getcwd()
+
+    nb_it = 1000
+    step_init = 0.05
+    alpha = 0.9
+    n_it_reduce = 50
+    reg = np.power(2.0,-5)
+
+    tv_table = []
+    np.random.seed(0)
+    img = np.random.rand(Nz, M, N, N)
+
+    for it in range(nb_it):
+        this_tv, G_tv = eval('tv_CPU.tv_'+tv_scheme+'(img, reg_z_over_reg=1.0, reg_time=1.0)')
+        if it < n_it_reduce:
+            step = step_init
+        else:
+            step = step_init * (n_it_reduce/it) ** alpha
+        update = - step * reg * G_tv
+
+        if it % 10 == 0:
+            for t in range(img.shape[1]):
+                tifffile.imsave(path_save+'/save_temp/'+str(t)+'/img_'+str(it).zfill(6)+'.tif', img[Nz//2,t,:,:].astype('float32'))
+            print(it, '\t', this_tv, '\t', this_tv / (Nz * M * N * N), '\t', step)
+
+        img += update
+        tv_table.append(tv_table)
 
 if __name__ == '__main__':
     run_CPU_tests()

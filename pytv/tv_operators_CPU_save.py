@@ -43,7 +43,7 @@
 
 import numpy as np
 
-def compute_L21_norm(D_img, return_array = False):
+def compute_L21_norm(D_img):
     '''
     Compute the L2,1 norm of an image of discrete differences: |x|_2,1 = \sum_i \sqrt(\sum_j x_{i,j}^2),
     with index i summing over image pixels, and index j summing over the difference terms.
@@ -63,12 +63,9 @@ def compute_L21_norm(D_img, return_array = False):
     out = np.square(D_img)
     out = np.sum(out, axis = 1)
     out = np.sqrt(out)
-    out_sum = np.sum(out)
+    out = np.sum(out)
 
-    if return_array:
-        return(out_sum, out)
-    else:
-        return(out_sum)
+    return(out)
 
 def D_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, factor_reg_static = 0):
     '''
@@ -231,25 +228,43 @@ def D_downwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
     D_img = np.zeros([Nz, N_d, M, N, N])
 
     # The intensity differences across rows (Downwind / Backward)
-    D_img[:, 0, :, 1:, :] = (img[:, :, 1:, :] - img[:, :, :-1, :])
+    if Nz > 2:
+        D_img[1:-1,0,:,1:,1:-1] = img[1:-1, :, :-1, 1:-1] - img[1:-1, :, 1:, 1:-1]
+    else:
+        D_img[:,0,:,1:,1:-1] = img[:, :, :-1, 1:-1] - img[:, :, 1:, 1:-1]
 
     # The intensity differences across columns (Downwind / Backward)
-    D_img[:, 1, :, :, 1:] = (img[:, :, :, 1:] - img[:, :, :, :-1])
+    if Nz > 2:
+        D_img[1:-1,1,:,1:-1,1:] = img[1:-1,:, 1:-1, :-1] - img[1:-1,:, 1:-1, 1:]
+    else:
+        D_img[:, 1, :, 1:-1, 1:] = img[:, :, 1:-1, :-1] - img[:, :, 1:-1, 1:]
 
     i_d = 2
     if Nz > 1 and reg_z_over_reg > 0:
         # The intensity differences across z (Downwind / Backward)
-        D_img[1:, i_d, :, :, :] = np.sqrt(reg_z_over_reg) * (img[1:, :, :, :] - img[:-1, :, :, :])
+        D_img[1:, i_d,:,1:-1,1:-1] = np.sqrt(reg_z_over_reg) * (img[:-1, :, 1:-1, 1:-1] - img[1:, :, 1:-1, 1:-1]) # The row_diff at the first z is 0
         i_d += 1
 
     if reg_time > 0 and M > 1:
-        D_img[:, i_d, 1:, :, :] = np.sqrt(reg_time) * (img[:, 1:, :, :] - img[:, :-1, :, :])
+        time_diff = np.zeros_like(img)
+        time_diff[:, :-1, :-1, :-1] = img[:, 1:, :-1, :-1] - img[:, :-1, :-1, :-1]
+
+        # The intensity differences across times (Downwind / Backward)
+        # if Nz > 2:
+        #     D_img[1:-1, i_d, 1:, 1:-1, 1:-1] = np.sqrt(reg_time) * (img[1:-1, :-1, 1:-1, 1:-1] - img[1:-1, 1:, 1:-1, 1:-1])
+        #     # D_img[:, i_d, 1:, 1:-1, 1:-1] = np.sqrt(reg_time) * (img[:, :-1, 1:-1, 1:-1] - img[:, 1:, 1:-1, 1:-1])
+        # else:
+        #     D_img[:, i_d, 1:, 1:-1, 1:-1] = np.sqrt(reg_time) * (img[:, :-1, 1:-1, 1:-1] - img[:, 1:, 1:-1, 1:-1])
+
+        D_img[:,i_d,:-1,:-2,:-2] = - np.sqrt(reg_time) * time_diff[:, :-1, 1:-1, 1:-1] # TODO: Really? Not the one below?
+        # D_img[:,i_d,1:,1:-1,1:-1] = - np.sqrt(reg_time) * time_diff[:, :-1, 1:-1, 1:-1] # Should be this?
 
         if isinstance(mask_static, np.ndarray):
             mask_static = np.tile(mask_static, [Nz, M, 1, 1])
             D_img_temp = D_img[:,i_d,:,:,:].copy()
             D_img_temp[mask_static] *= np.sqrt(factor_reg_static)
             D_img[:,i_d,:,:,:] = D_img_temp
+
         i_d += 1
 
     return D_img
@@ -289,20 +304,26 @@ def D_upwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, facto
     D_img = np.zeros([Nz, N_d, M, N, N])
 
     # The intensity differences across rows (Upwind / Forward)
-    D_img[:, 0, :, :-1, :] = img[:, :, 1:, :] - img[:, :, :-1, :]
+    if Nz > 1:
+        D_img[:-1, 0, :, :-1, :-1] = img[:-1, :, 1:, :-1] - img[:-1, :, :-1, :-1]
+    else:
+        D_img[:, 0, :, :-1, :-1] = img[:, :, 1:, :-1] - img[:, :, :-1, :-1]
 
     # The intensity differences across columns (Upwind / Forward)
-    D_img[:, 1, :, :, :-1] = img[:, :, :, 1:] - img[:, :, :, :-1]
+    if Nz > 1:
+        D_img[:-1, 1, :, :-1, :-1] = img[:-1, :, :-1, 1:] - img[:-1, :, :-1, :-1]
+    else:
+        D_img[:, 1, :, :-1, :-1] = img[:, :, :-1, 1:] - img[:, :, :-1, :-1]
 
     i_d = 2
     if Nz > 1 and reg_z_over_reg > 0:
         # The intensity differences across slices (Upwind / Forward)
-        D_img[:-1, i_d, :, :, :] = np.sqrt(reg_z_over_reg) * (img[1:, :, :, :] - img[:-1, :, :, :])
+        D_img[:-1, i_d, :, :-1, :-1] = np.sqrt(reg_z_over_reg) * (img[1:, :, :-1, :-1] - img[:-1, :, :-1, :-1])
         i_d += 1
 
     if reg_time > 0 and M > 1:
         # The intensity differences across times (Upwind / Forward)
-        D_img[:, i_d, :-1, :, :] = np.sqrt(reg_time) * (img[:, 1:, :, :] - img[:, :-1, :, :])
+        D_img[:, i_d, :-1, :-1, :-1] = np.sqrt(reg_time) * (img[:, 1:, :-1, :-1] - img[:, :-1, :-1, :-1])
 
         if isinstance(mask_static, np.ndarray):
             mask_static = np.tile(mask_static, [Nz, M, 1, 1])
@@ -523,33 +544,52 @@ def D_T_downwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, f
         reg_z_over_reg = 0.0
 
     Nz = img.shape[0]
-    Nd = img.shape[1]
-    M = img.shape[2]
+    N_d = img.shape[1]
     N = img.shape[-1]
-
+        
+    M = img.shape[2]
     D_T_img = np.zeros([Nz, M, N, N])
 
-    # Forward row term
-    D_T_img[:,:,1:,:] += img[:, 0, :, 1:, :]
-    D_T_img[:,:,:-1,:] += -img[:, 0, :, 1:, :]
+    # Backward row term
+    if Nz > 2:
+        D_T_img[1:-1,:,1:-1,1:-1] += img[1:-1,0,:,2:,1:-1] - img[1:-1,0,:,1:-1,1:-1]
+        D_T_img[1:-1,:,0,1:-1] += img[1:-1,0,:,1,1:-1]
+        D_T_img[1:-1,:,-1,1:-1] += -img[1:-1,0,:,-1,1:-1]
+    else:
+        D_T_img[:,:,1:-1,1:-1] += img[:,0,:,2:,1:-1] - img[:,0,:,1:-1,1:-1]
+        D_T_img[:,:,0,1:-1] += img[:,0,:,1,1:-1]
+        D_T_img[:,:,-1,1:-1] += -img[:,0,:,-1,1:-1]
 
-    # # # Forward col term
-    D_T_img[:,:,:,1:] += img[:, 1, :, :, 1:]
-    D_T_img[:,:,:,:-1] += -img[:, 1, :, :, 1:]
+    # Backward col term
+    if Nz > 2:
+        D_T_img[1:-1,:,1:-1,1:-1] += img[1:-1,1,:,1:-1,2:] - img[1:-1,1,:,1:-1,1:-1]
+        D_T_img[1:-1,:,1:-1,0] += img[1:-1,1,:,1:-1,1]
+        D_T_img[1:-1,:,1:-1,-1] += - img[1:-1,1,:,1:-1,-1]
+    else:
+        D_T_img[:,:,1:-1,1:-1] += img[:,1,:,1:-1,2:] - img[:,1,:,1:-1,1:-1]
+        D_T_img[:,:,1:-1,0] += img[:,1,:,1:-1,1]
+        D_T_img[:,:,1:-1,-1] += - img[:,1,:,1:-1,-1]
 
     i_d = 2
-    # The intensity differences across slices
     if Nz > 1 and reg_z_over_reg > 0:
-        D_T_img[1:,:,:,:] += np.sqrt(reg_z_over_reg) * img[1:, i_d,:,:,:]
-        D_T_img[:-1,:,:,:] += -np.sqrt(reg_z_over_reg) * img[1:, i_d,:,:,:]
+        # Backward z term
+        D_T_img[1:-1,:,1:-1,1:-1] += np.sqrt(reg_z_over_reg) * (img[2:,i_d,:,1:-1,1:-1] - img[1:-1,i_d,:,1:-1,1:-1])
+        D_T_img[0,:,1:-1,1:-1] += np.sqrt(reg_z_over_reg) * img[1,i_d,:,1:-1,1:-1]
+        D_T_img[-1,:,1:-1,1:-1] += -np.sqrt(reg_z_over_reg) * img[-1,i_d,:,1:-1,1:-1]
         i_d += 1
 
-    # The intensity differences across time
     if reg_time > 0 and M > 1:
         D_T_img_time_update = np.zeros_like(D_T_img)
 
-        D_T_img_time_update[:, 1:, :, :] += np.sqrt(reg_time) * img[:, i_d, 1:, :,:]
-        D_T_img_time_update[:, :-1, :, :] += - np.sqrt(reg_time) * img[:, i_d, 1:,:,:]
+        # Backward time term
+        if Nz > 2:
+            D_T_img_time_update[1:-1,1:-1,1:-1,1:-1] += np.sqrt(reg_time) * (img[1:-1,i_d,2:,1:-1,1:-1] - img[1:-1,i_d,1:-1,1:-1,1:-1])
+            D_T_img_time_update[1:-1,0,1:-1,1:-1] += np.sqrt(reg_time) * img[1:-1,i_d,1,1:-1,1:-1]
+            D_T_img_time_update[1:-1,-1,1:-1,1:-1] += -np.sqrt(reg_time) * img[1:-1,i_d,-1,1:-1,1:-1]
+        else:
+            D_T_img_time_update[:,1:-1,1:-1,1:-1] += np.sqrt(reg_time) * (img[:,i_d,2:,1:-1,1:-1] - img[:,i_d,1:-1,1:-1,1:-1])
+            D_T_img_time_update[:,0,1:-1,1:-1] += np.sqrt(reg_time) * img[:,i_d,1,1:-1,1:-1]
+            D_T_img_time_update[:,-1,1:-1,1:-1] += -np.sqrt(reg_time) * img[:,i_d,-1,1:-1,1:-1]
         i_d += 1
 
         if isinstance(mask_static, np.ndarray):
@@ -560,7 +600,7 @@ def D_T_downwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, f
 
     return(D_T_img)
 
-def D_T_upwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, factor_reg_static = 0):
+def D_T_upwind(img, reg_z_over_reg = 1.0, reg_time = 0):
     '''
     Calculates the output of the input image img by the operator D^T (tranposed gradient discretized using upwind scheme)
 
@@ -586,36 +626,46 @@ def D_T_upwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
     Nd = img.shape[1]
     M = img.shape[2]
     N = img.shape[-1]
+
     D_T_img = np.zeros([Nz, M, N, N])
 
-    # Forward row term
-    D_T_img[:,:,1:,:] += img[:,0,:,:-1,:]
-    D_T_img[:,:,:-1,:] += -img[:,0,:,:-1,:]
+    if Nz > 1:
+        # Forward row term
+        D_T_img[:-1,:,1:-1,:-1] += img[:-1,0,:,:-2,:-1]-img[:-1,0,:,1:-1,:-1]
+        D_T_img[:-1,:,0,:-1] += -img[:-1,0,:,0,:-1]
+        D_T_img[:-1,:,-1,:-1] += img[:-1,0,:,-2,:-1]
 
-    # # Forward col term
-    D_T_img[:,:,:,1:] += img[:,1,:,:,:-1]
-    D_T_img[:,:,:,:-1] += -img[:,1,:,:,:-1]
+        # Forward col term
+        D_T_img[:-1,:,:-1,1:-1] += img[:-1,1,:,:-1,:-2]-img[:-1,1,:,:-1,1:-1]
+        D_T_img[:-1,:,:-1,0] += -img[:-1,1,:,:-1,0]
+        D_T_img[:-1,:,:-1,-1] += img[:-1,1,:,:-1,-2]
+
+    else:
+        # Forward row term
+        D_T_img[:,:,1:-1,:-1] += img[:,0,:,:-2,:-1]-img[:,0,:,1:-1,:-1]
+        D_T_img[:,:,0,:-1] += -img[:,0,:,0,:-1]
+        D_T_img[:,:,-1,:-1] += img[:,0,:,-2,:-1]
+
+        # Forward col term
+        D_T_img[:,:,:-1,1:-1] += img[:,1,:,:-1,:-2]-img[:,1,:,:-1,1:-1]
+        D_T_img[:,:,:-1,0] += -img[:,1,:,:-1,0]
+        D_T_img[:,:,:-1,-1] += img[:,1,:,:-1,-2]
 
     i_d = 2
     # The intensity differences across slices
     if Nz > 1 and reg_z_over_reg > 0:
-        D_T_img[1:,:,:,:] += np.sqrt(reg_z_over_reg) * img[:-1, i_d, :, :, :]
-        D_T_img[:-1,:,:,:] += - np.sqrt(reg_z_over_reg) * img[:-1, i_d, :, :, :]
+        D_T_img[1:-1,:,:-1,:-1] += np.sqrt(reg_z_over_reg) * (img[:-2,i_d,:,:-1,:-1]-img[1:-1,i_d,:,:-1,:-1])
+        D_T_img[0,:,:-1,:-1] += -np.sqrt(reg_z_over_reg) * img[0,i_d,:,:-1,:-1]
+        D_T_img[-1,:,:-1,:-1] += np.sqrt(reg_z_over_reg) * img[-2,i_d,:,:-1,:-1]
+
         i_d += 1
 
     # The intensity differences across time
     if reg_time > 0 and M > 1:
-        D_T_img_time_update = np.zeros_like(D_T_img)
-
-        D_T_img_time_update[:,1:,:,:] += np.sqrt(reg_time) * img[:, i_d, :-1, :, :]
-        D_T_img_time_update[:,:-1,:,:] += -np.sqrt(reg_time) * img[:, i_d, :-1, :, :]
+        D_T_img[:,1:-1,:-1,:-1] += np.sqrt(reg_time) * (img[:,i_d,:-2,:-1,:-1]-img[:,i_d,1:-1,:-1,:-1])
+        D_T_img[:,0,:-1,:-1] += -np.sqrt(reg_time) * img[:,i_d,0,:-1,:-1]
+        D_T_img[:,-1,:-1,:-1] += np.sqrt(reg_time) * img[:,i_d,-2,:-1,:-1]
         i_d += 1
-
-        if isinstance(mask_static, np.ndarray):
-            mask_static = np.tile(mask_static, [Nz, M, 1, 1])
-            D_T_img_time_update[mask_static] *= np.sqrt(factor_reg_static)
-
-        D_T_img += D_T_img_time_update
 
     return(D_T_img)
 
