@@ -72,7 +72,8 @@ def run_GPU_tests(N = 100, Nz = 20, M = [2, 3, 4]):
     A function that runs GPU tests to check PyTV is working properly.
     '''
 
-    tv_schemes = ['downwind', 'upwind', 'central', 'hybrid']
+    # tv_schemes = ['downwind', 'upwind', 'central', 'hybrid']
+    tv_schemes = ['upwind']
     print('\nRunning GPU tests:')
     for tv_scheme in tv_schemes:
         print('\nGPU test for TV scheme: '+str(tv_scheme))
@@ -196,8 +197,8 @@ def test_2D_to_3D(tv_scheme, N = 100, Nz = 20, tolerance = 1e-5, cpu_only = Fals
         Nz = 5
     img = np.random.rand(1,1,N,N)
     img_3D = np.tile(img, [Nz, 1, 1, 1])
-
     factor_tv = 1.0 / Nz
+
 
     # Direct CPU implementation
     (tv1, G1) = eval('tv_CPU.tv_'+tv_scheme+'(img)')
@@ -205,7 +206,6 @@ def test_2D_to_3D(tv_scheme, N = 100, Nz = 20, tolerance = 1e-5, cpu_only = Fals
         (tv1_3D, G1_3D) = eval('tv_CPU.tv_'+tv_scheme+'(img_3D, match_2D_form = True)')
     else:
         (tv1_3D, G1_3D) = eval('tv_CPU.tv_'+tv_scheme+'(img_3D)')
-    # print(tv1, tv1_3D, tv1_3D * factor_tv, factor_tv)
     assert test_equal([tv1, tv1_3D * factor_tv], tolerance = tolerance), 'CPU TV values are not equal'
     assert test_equal([G1, np.reshape(G1_3D[1], G1.shape)], tolerance = tolerance), 'CPU Sub-gradient arrays are not equal'
 
@@ -275,6 +275,7 @@ def test_tv_G_D_DT_3D(tv_scheme, N = 100, Nz = 20, tolerance = 1e-5, cpu_only = 
         (tv2, G2) = eval('tv_GPU.tv_'+tv_scheme+'(img)')
         time2 = time.time() - tic
 
+
     # Operator CPU implementation
     tic = time.time()
     D3 = eval('tv_operators_CPU.D_'+tv_scheme+'(img)')
@@ -291,6 +292,7 @@ def test_tv_G_D_DT_3D(tv_scheme, N = 100, Nz = 20, tolerance = 1e-5, cpu_only = 
         DT_D4 = eval('tv_operators_GPU.D_T_'+tv_scheme+'(D4)')
         D4 = D4.cpu().detach().numpy()
 
+
     if cpu_only:
         assert test_equal([tv1, tv3], tolerance = tolerance), 'TV values are not equal'
     else:
@@ -298,7 +300,7 @@ def test_tv_G_D_DT_3D(tv_scheme, N = 100, Nz = 20, tolerance = 1e-5, cpu_only = 
         assert test_equal([G1, G2], tolerance = tolerance), 'Sub-gradient arrays are not equal'
         assert test_equal([D3, D4], tolerance = tolerance), 'D(x) arrays are not equal'
         assert test_equal([DT_D3, DT_D4], tolerance = tolerance), 'D_T(D(x)) arrays are not equal'
-        del D3, D4, DT_D3, DT_D4
+        del D3, D4, DT_D3, DT_D4, G1, G2
 
     print('\t[PASS] \tScheme '+tv_scheme+' 3D: Equal values for TV, G, D, DT from different implementations')
 
@@ -349,14 +351,14 @@ def test_tv_D_DT_4D(tv_scheme, N = 100, Nz = 20, M = [2, 3, 4], reg_time = 1.0, 
             D4 = D4.cpu().detach().numpy()
 
         if cpu_only:
-            # print(tv1,tv3)
             assert test_equal([tv1, tv3], tolerance = tolerance), 'TV values are not equal'
             del D3, DT_D3
         else:
             assert test_equal([tv1, tv2, tv3, tv4], tolerance = tolerance), 'TV values are not equal'
+            assert test_equal([G1, G2], tolerance = tolerance), 'Sub-gradient arrays are not equal'
             assert test_equal([D3, D4], tolerance = tolerance), 'D(x) arrays are not equal'
             assert test_equal([DT_D3, DT_D4], tolerance = tolerance), 'D_T(D(x)) arrays are not equal'
-            del D3, D4, DT_D3, DT_D4
+            del D3, D4, DT_D3, DT_D4, G1, G2
     print('\t[PASS] \tScheme '+tv_scheme+' 4D: Equal values for TV, D, DT from different implementations')
 
     time1 /= len(M)
@@ -409,7 +411,7 @@ def test_transpose(operator, operator_transposed, n_rays = 100, n_test = 5, tole
 
     return res
 
-def test_subgradient_descent(tv_scheme, N = 20, Nz = 5, M = 3, tolerance = 1e-5, cpu_only = False):
+def test_subgradient_descent(tv_scheme, N = 20, Nz = 5, M = 3, tolerance = 1e-5, cpu = True):
 
     import tifffile, os
     path_save = os.getcwd()
@@ -425,7 +427,10 @@ def test_subgradient_descent(tv_scheme, N = 20, Nz = 5, M = 3, tolerance = 1e-5,
     img = np.random.rand(Nz, M, N, N)
 
     for it in range(nb_it):
-        this_tv, G_tv = eval('tv_CPU.tv_'+tv_scheme+'(img, reg_z_over_reg=1.0, reg_time=1.0)')
+        if cpu:
+            this_tv, G_tv = eval('tv_CPU.tv_'+tv_scheme+'(img, reg_z_over_reg=1.0, reg_time=1.0)')
+        else:
+            this_tv, G_tv = eval('tv_GPU.tv_'+tv_scheme+'(img, reg_z_over_reg=1.0, reg_time=1.0)')
         if it < n_it_reduce:
             step = step_init
         else:
