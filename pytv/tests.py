@@ -50,14 +50,10 @@ def run_CPU_tests(N = 100, Nz = 20, M = [2, 3, 4]):
     A function that runs CPU tests to check PyTV is working properly.
     '''
 
-
-    B = np.random.rand(10,10,50,50)
-
     A = np.zeros([1,1,5,5])
     A[0,0,2,2] = 1.0
-    # M = [4,]
-    # tv_schemes = ['downwind', 'upwind', 'central', 'hybrid']
-    tv_schemes = ['central']
+
+    tv_schemes = ['downwind', 'upwind', 'central', 'hybrid']
     print('\nRunning CPU tests:')
     for tv_scheme in tv_schemes:
         print('\nCPU test for TV scheme: '+str(tv_scheme))
@@ -70,9 +66,6 @@ def run_CPU_tests(N = 100, Nz = 20, M = [2, 3, 4]):
         print('\nTV(A) = '+str(tv))
         print('A subgradient of TV at A is:\n'+str(G))
     print('\nPassed all CPU tests successfully')
-    # tv1, _ = tv_CPU.tv_upwind(B)
-    # tv2, _ = tv_CPU.tv_downwind(B)
-    # print(tv1, tv2)
 
 def run_GPU_tests(N = 100, Nz = 20, M = [2, 3, 4]):
     '''
@@ -205,15 +198,6 @@ def test_2D_to_3D(tv_scheme, N = 100, Nz = 20, tolerance = 1e-5, cpu_only = Fals
     img_3D = np.tile(img, [Nz, 1, 1, 1])
 
     factor_tv = 1.0 / Nz
-    # if tv_scheme == 'downwind':
-    #     factor_tv = 1.0 / (Nz - 1)
-
-    # if tv_scheme == 'downwind' or tv_scheme ==  'central':
-        # factor_tv = 1.0 / (Nz - 2)
-    #     factor_tv = 1.0 / (Nz)
-    # elif tv_scheme == 'upwind' or tv_scheme == 'hybrid':
-    #     # factor_tv = 1.0 / (Nz - 1)
-    #     factor_tv = 1.0 / (Nz)
 
     # Direct CPU implementation
     (tv1, G1) = eval('tv_CPU.tv_'+tv_scheme+'(img)')
