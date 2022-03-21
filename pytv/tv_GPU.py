@@ -133,7 +133,7 @@ def tv_hybrid(img, mask = [], reg_z_over_reg = 1.0, match_2D_form = False):
 
     return(tv, G_cpu)
 
-def tv_downwind(img, mask = [], reg_z_over_reg = 1.0):
+def tv_downwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static = False, factor_reg_static = 0, return_pytorch_tensor = False):
     '''
     Calculates the total variation and a subgradient of the input image img using the downwind gradient discretization
 
@@ -156,55 +156,39 @@ def tv_downwind(img, mask = [], reg_z_over_reg = 1.0):
 
     if mask != []:
         img[~mask] = 0
+    Nz = img.shape[0]
+    M = img.shape[1]
 
-    if len(img.shape) == 2:
-        return(pytv.tv_2d_GPU.tv_downwind(img))
-    elif (len(img.shape) == 3 and img.shape[0] < 3):
-        return(pytv.tv_2d_GPU.tv_downwind(img[0]))
+    D_img = pytv.tv_operators_GPU.D_downwind(img, reg_z_over_reg = reg_z_over_reg, reg_time = reg_time, mask_static = mask_static, factor_reg_static = factor_reg_static, return_pytorch_tensor = True)
+    tv, grad_norms = pytv.tv_operators_GPU.compute_L21_norm(D_img, return_array=True)
 
-    kernel_col = np.array([[[-1,1]]]).astype('float32')
-    kernel_col = torch.as_tensor(np.reshape(kernel_col, (1,1)+kernel_col.shape)).cuda()
+    # When non-differentiable, set to 0.
+    grad_norms[grad_norms == 0] = np.inf # not necessary if eps > 0
 
-    kernel_row = np.array([[[-1],[1]]]).astype('float32')
-    kernel_row = torch.as_tensor(np.reshape(kernel_row, (1,1)+kernel_row.shape)).cuda()
+    # Careful when reading math: D_img[:,0,:,:,:] does not give r_{m,n,p,q}, but r_{m-1,n,p,q}
+    G = torch.zeros(*img.shape).cuda()
+    G[:, :, :, :] += (D_img[:,0,:,:,:]+D_img[:,1,:,:,:]) / grad_norms[:, :, :, :]
+    G[:, :, :-1, :] += -D_img[:,0,:,1:,:] / grad_norms[:, :, 1:, :]
+    G[:, :, :, :-1] += -D_img[:,1,:,:,1:] / grad_norms[:, :, :, 1:]
 
-    kernel_slice = np.array([[[-1]], [[1]]]).astype('float32')
-    kernel_slice = torch.as_tensor(np.reshape(kernel_slice, (1,1)+kernel_slice.shape)).cuda()
+    i_d = 2
+    if Nz > 1 and reg_z_over_reg > 0:
+        G[:, :, :, :] += D_img[:,i_d,:,:,:] / grad_norms[:, :, :, :]
+        G[:-1, :, :, :] += -D_img[1:,i_d,:,:,:] / grad_norms[1:, :, :, :]
+        i_d += 1
 
-    img = np.reshape(img, (1,1)+img.shape).astype('float32')
-    img_tensor = torch.as_tensor(img).cuda()
-    row_diff_tensor = (torch.zeros_like(img_tensor)).squeeze()
-    col_diff_tensor = (torch.zeros_like(img_tensor)).squeeze()
-    slice_diff_tensor = (torch.zeros_like(img_tensor)).squeeze()
+    if reg_time > 0 and M > 1:
+        G[:, :, :, :] += D_img[:,i_d,:,:,:] / grad_norms[:, :, :, :]
+        G[:, :-1, :, :] += -D_img[:,i_d,1:,:,:] / grad_norms[:, 1:, :, :]
+        i_d += 1
 
-    row_diff_tensor[:, :-1, :] = torch.nn.functional.conv3d(img_tensor, kernel_row, bias=None, stride=1, padding = 0).squeeze()
-    col_diff_tensor[:, :, :-1] = torch.nn.functional.conv3d(img_tensor, kernel_col, bias=None, stride=1, padding = 0).squeeze()
-    slice_diff_tensor[:-1, :, :] = np.sqrt(reg_z_over_reg) * torch.nn.functional.conv3d(img_tensor, kernel_slice, bias=None, stride=1, padding = 0).squeeze()
-
-    # To match CPU explicit versions
-    row_diff_tensor[:, :, -1] = 0
-    row_diff_tensor[-1, :, :] = 0
-    col_diff_tensor[:, -1, :] = 0
-    col_diff_tensor[-1, :, :] = 0
-    slice_diff_tensor[:, -1, :] = 0
-    slice_diff_tensor[:, :, -1] = 0
-
-    grad_norms = (torch.zeros_like(img_tensor)).squeeze()
-    grad_norms[:-1, :-1, :-1] = torch.sqrt(torch.square(row_diff_tensor[1:, :-1, 1:])+torch.square(col_diff_tensor[1:, 1:, :-1])+torch.square(slice_diff_tensor[:-1, 1:, 1:]))
-    tv = grad_norms.sum().cpu().detach().numpy().squeeze()
-    grad_norms[grad_norms == 0] = np.inf
-    
-    G = torch.zeros_like(img_tensor).squeeze()
-    G[1:, 1:, 1:] = (row_diff_tensor[1:, :-1, 1:] + col_diff_tensor[1:, 1:, :-1] + slice_diff_tensor[:-1, 1:, 1:]) / grad_norms[:-1, :-1, :-1]
-    G[1:, :-1, 1:] += - row_diff_tensor[1:, :-1, 1:] / grad_norms[:-1, :-1, :-1]
-    G[1:, 1:, :-1] += - col_diff_tensor[1:, 1:, :-1] / grad_norms[:-1, :-1, :-1]
-    G[:-1, 1:, 1:] += - slice_diff_tensor[:-1, 1:, 1:] / grad_norms[:-1, :-1, :-1]
-
-    G_cpu = G.cpu().detach().numpy().squeeze()
     torch.cuda.empty_cache()
-    del G, grad_norms, row_diff_tensor, col_diff_tensor, slice_diff_tensor, img_tensor, kernel_row, kernel_col, kernel_slice
-    
-    return(tv, G_cpu)
+    del D_img, grad_norms
+
+    if return_pytorch_tensor:
+        return(tv, G)
+    else:
+        return(tv, G.cpu().detach().numpy())
 
 def tv_upwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static = False, factor_reg_static = 0, return_pytorch_tensor = False):
     '''

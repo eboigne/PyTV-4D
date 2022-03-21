@@ -73,7 +73,7 @@ def run_GPU_tests(N = 100, Nz = 20, M = [2, 3, 4]):
     '''
 
     # tv_schemes = ['downwind', 'upwind', 'central', 'hybrid']
-    tv_schemes = ['upwind']
+    tv_schemes = ['downwind']
     print('\nRunning GPU tests:')
     for tv_scheme in tv_schemes:
         print('\nGPU test for TV scheme: '+str(tv_scheme))
@@ -199,7 +199,6 @@ def test_2D_to_3D(tv_scheme, N = 100, Nz = 20, tolerance = 1e-5, cpu_only = Fals
     img_3D = np.tile(img, [Nz, 1, 1, 1])
     factor_tv = 1.0 / Nz
 
-
     # Direct CPU implementation
     (tv1, G1) = eval('tv_CPU.tv_'+tv_scheme+'(img)')
     if tv_scheme == 'hybrid':
@@ -274,7 +273,6 @@ def test_tv_G_D_DT_3D(tv_scheme, N = 100, Nz = 20, tolerance = 1e-5, cpu_only = 
         tic = time.time()
         (tv2, G2) = eval('tv_GPU.tv_'+tv_scheme+'(img)')
         time2 = time.time() - tic
-
 
     # Operator CPU implementation
     tic = time.time()
