@@ -70,12 +70,12 @@ requirements:
     - {{ dep.lower() }}
     {% endfor %}
 
-test:
-  source_files: # Location of tests files
-    - tests
-  requires: # Added dependencies on top of requirements:run ones
-    - pytest
-    - pytest-cov
+#test:
+#  source_files: # Location of tests files
+#    - tests
+#  requires: # Added dependencies on top of requirements:run ones
+#    - pytest
+#    - pytest-cov
 #   commands: # Commands ran to test. 
 #     - pytest # The pytest program will run all files *_test. py and test_*.py
 
