@@ -68,6 +68,8 @@ Note that the tests may fail because of bad rng, so try running it a couple time
 
 # Getting started
 
+See the details below and the [getting started Jupyter notebook](https://github.com/eboigne/PyTV-4D/blob/main/examples/a_getting_started.ipynb). 
+
 ### Computing TV and subgradient
 
 Below is a simple example to compute the total variation and sub-gradient on CPU and GPU:
@@ -76,9 +78,9 @@ Below is a simple example to compute the total variation and sub-gradient on CPU
 import pytv  
 import numpy as np
 
-Nz, N = 20, 1000 # 3D Image dimensions
+Nz, M, N = 20, 4, 100 # 4D Image dimensions. M is for time.
 np.random.seed(0)
-img = np.random.rand(Nz, N, N)
+img = np.random.rand(Nz, M, N, N)
 
 tv1, G1 = pytv.tv_CPU.tv_hybrid(img)
 tv2, G2 = pytv.tv_GPU.tv_hybrid(img)
@@ -108,23 +110,22 @@ where <img src="https://latex.codecogs.com/svg.latex?{\color{Gray}\Large&space;x
 Because the TV is not everywhere differentiable, the sub-gradient descent method is used to minimize this loss function:
 
 ```python
-import matplotlib.pyplot as plt
-
 noise_level = 100
-nb_it = 150
+nb_it = 300
 regularization = 25
 step_size = 5e-3 # If step size is too large, loss function may not decrease at every step
 
+np.random.seed(0)
 cameraman_truth = pytv.utils.cameraman() # Open the cameraman's grayscale image
 cameraman_truth = np.reshape(cameraman_truth, (1,1,)+cameraman_truth.shape)
 cameraman_noisy = cameraman_truth + noise_level * np.random.rand(*cameraman_truth.shape) # Add noise
 cameraman_estimate = np.copy(cameraman_noisy)
 
-loss_fct = np.zeros([nb_it,])
+loss_fct_GD = np.zeros([nb_it,])
 for it in range(nb_it): # A simple sub-gradient descent algorithm for image denoising
-    tv, G = pytv.tv.tv_hybrid(cameraman_estimate)
+    tv, G = pytv.tv_GPU.tv_hybrid(cameraman_estimate)
     cameraman_estimate += - step_size * ((cameraman_estimate - cameraman_noisy) + regularization * G)
-    loss_fct[it] = 0.5 * np.sum(np.square(cameraman_estimate - cameraman_noisy)) + regularization * tv
+    loss_fct_GD[it] = 0.5 * np.sum(np.square(cameraman_estimate - cameraman_noisy)) + regularization * tv
 ```
 
 <p align="center">
@@ -143,13 +144,12 @@ A simple example is presented below in the case of the denoising of the camerama
 ```python
 # A simple version of the Chambolle & Pock algorithm for image denoising
 # Ref: Chambolle, Antonin, and Thomas Pock. "A first-order primal-dual algorithm for convex problems with applications to imaging." Journal of mathematical imaging and vision 40.1 (2011): 120-145.
-
 sigma_D = 0.5
 sigma_A = 1.0
 tau = 1 / (8 + 1)
 
 for it in range(nb_it):
-    
+
     # Dual update
     dual_update_fidelity = (dual_update_fidelity + sigma_A * (cameraman_estimate - cameraman_noisy))/(1.0+sigma_A)
     D_x = pytv.tv_operators_GPU.D_hybrid(cameraman_estimate)
@@ -158,9 +158,9 @@ for it in range(nb_it):
 
     # Primal update
     cameraman_estimate = cameraman_estimate - tau * dual_update_fidelity - tau * pytv.tv_operators_GPU.D_T_hybrid(dual_update_TV)
-    
+
     # Loss function update
-    loss_fct[it] = 0.5 * np.sum(np.square(cameraman_estimate - cameraman_noisy)) + regularization * pytv.tv_operators_GPU.compute_L21_norm(D_x)
+    loss_fct_CP[it] = 0.5 * np.sum(np.square(cameraman_estimate - cameraman_noisy)) + regularization * pytv.tv_operators_GPU.compute_L21_norm(D_x)
 ```
 
 <p align="center">
@@ -182,8 +182,9 @@ if use_GPU:
 else:
   import pytv.tv_CPU as tv
 
-Nz, N = 10, 100 # Image size 
-img = np.random.rand(Nz, N, N)
+Nz, M, N = 20, 4, 100 # 4D Image dimensions. M is for time.
+np.random.seed(0)
+img = np.random.rand(Nz, M, N, N)
 
 # TV values, and sub-gradient arrays
 tv1, G1 = tv.tv_upwind(img)
@@ -210,15 +211,15 @@ img = np.random.rand(Nz, M, N, N)
 
 # Discrete gradient: D_img has size (Nz, Nd, M, N, N) where Nd is the number of difference terms
 D_img1 = tv.D_upwind(img, reg_time = reg_time)
-D_img2 = tv.D_downwind(img, reg_time)
-D_img3 = tv.D_central(img, reg_time)
-D_img4 = tv.D_hybrid(img, reg_time)
+D_img2 = tv.D_downwind(img, reg_time = reg_time)
+D_img3 = tv.D_central(img, reg_time = reg_time)
+D_img4 = tv.D_hybrid(img, reg_time = reg_time)
 
 # Transposed discrete gradient: D_T_D_img has size (Nz, M, N, N)
-D_T_D_img1 = tv.D_T_upwind(D_img1, reg_time)
-D_T_D_img2 = tv.D_T_downwind(D_img2, reg_time)
-D_T_D_img3 = tv.D_T_central(D_img3, reg_time)
-D_T_D_img4 = tv.D_T_hybrid(D_img4, reg_time)
+D_T_D_img1 = tv.D_T_upwind(D_img1, reg_time = reg_time)
+D_T_D_img2 = tv.D_T_downwind(D_img2, reg_time = reg_time)
+D_T_D_img3 = tv.D_T_central(D_img3, reg_time = reg_time)
+D_T_D_img4 = tv.D_T_hybrid(D_img4, reg_time = reg_time)
 
 # TV values: obtained by computing the L2,1 norm of the image gradient D(img) 
 tv1 = tv.compute_L21_norm(D_img1)
