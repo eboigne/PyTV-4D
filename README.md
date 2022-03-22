@@ -33,7 +33,7 @@ For a quick installation running the CPU routines only, install numpy and PyTV-4
 
 ### CPU & GPU
 
-##### Conda
+##### Conda [Recommended]
 First, install PyTorch (version at least 1.5.0) following the guidelines [on the official website](https://pytorch.org/). Make sure to install the correct version for your setup to enable GPU computations.  
 
 Then, the PyTV-4D files can be installed as a package using anaconda:  
