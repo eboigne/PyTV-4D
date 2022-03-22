@@ -129,8 +129,8 @@ for it in range(nb_it): # A simple sub-gradient descent algorithm for image deno
 ```
 
 <p align="center">
-<img src="https://raw.githubusercontent.com/eboigne/PyTV-4D/main/pytv/media/img_denoising_cameraman1.png" alt="Images of the cameraman"/>
-<img src="https://raw.githubusercontent.com/eboigne/PyTV-4D/main/pytv/media/img_denoising_loss_fct1.png" alt="Loss function"/>
+<img src="https://raw.githubusercontent.com/eboigne/PyTV-4D/main/pytv/media/img_denoising_cameraman1.jpg" alt="Images of the cameraman"/>
+<img src="https://raw.githubusercontent.com/eboigne/PyTV-4D/main/pytv/media/img_denoising_loss_fct1.jpg" alt="Loss function"/>
 </p>
 
 
@@ -164,7 +164,7 @@ for it in range(nb_it):
 ```
 
 <p align="center">
-<img src="https://raw.githubusercontent.com/eboigne/PyTV-4D/main/pytv/media/img_denoising_loss_fct2.png" alt="Loss function"/>
+<img src="https://raw.githubusercontent.com/eboigne/PyTV-4D/main/pytv/media/img_denoising_loss_fct2.jpg" alt="Loss function"/>
 </p>
 
 # Functions overview
@@ -178,9 +178,9 @@ use_GPU = True
 
 import numpy as np
 if use_GPU:
-  import pytv.tv_GPU as tv
+    import pytv.tv_GPU as tv
 else:
-  import pytv.tv_CPU as tv
+    import pytv.tv_CPU as tv
 
 Nz, M, N = 20, 4, 100 # 4D Image dimensions. M is for time.
 np.random.seed(0)
@@ -200,9 +200,9 @@ use_GPU = True
 
 import numpy as np
 if use_GPU:
-  import pytv.tv_operators_GPU as tv
+    import pytv.tv_operators_GPU as tv
 else:
-  import pytv.tv_operators_CPU as tv
+    import pytv.tv_operators_CPU as tv
 
 Nz, N = 10, 100 # Image size 
 M = 2 # Time size
