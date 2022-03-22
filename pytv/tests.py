@@ -45,15 +45,15 @@ import numpy as np
 import time
 from pytv import *
 
-def run_CPU_tests(N = 100, Nz = 20, M = [2, 3, 4]):
+def run_CPU_tests(N = 100, Nz = 20, M = [2, 3, 4, 8]):
     '''
     A function that runs CPU tests to check PyTV is working properly.
     '''
 
-    A = np.zeros([1,1,5,5])
-    A[0,0,2,2] = 1.0
+    # A = np.zeros([1,1,5,5])
+    # A[0,0,2,2] = 1.0
 
-    tv_schemes = ['downwind', 'upwind', 'central', 'hybrid']
+    tv_schemes = ['upwind', 'downwind', 'hybrid', 'central']
     print('\nRunning CPU tests:')
     for tv_scheme in tv_schemes:
         print('\nCPU test for TV scheme: '+str(tv_scheme))
@@ -62,18 +62,19 @@ def run_CPU_tests(N = 100, Nz = 20, M = [2, 3, 4]):
         test_2D_to_3D(tv_scheme, cpu_only = True, N = N, Nz = Nz)
         time_4D = test_tv_D_DT_4D(tv_scheme, cpu_only = True, N = N, Nz = 1, M = M)
         time_4D = test_tv_D_DT_4D(tv_scheme, cpu_only = True, N = N, Nz = Nz, M = M)
-        tv, G = eval('tv_CPU.tv_'+tv_scheme+'(A)')
-        print('\nTV(A) = '+str(tv))
-        print('A subgradient of TV at A is:\n'+str(G))
+
+        # tv, G = eval('tv_CPU.tv_'+tv_scheme+'(A)')
+        # print('\nTV(A) = '+str(tv))
+        # print('A subgradient of TV at A is:\n'+str(G))
     print('\nPassed all CPU tests successfully')
 
-def run_GPU_tests(N = 100, Nz = 20, M = [2, 3, 4]):
+def run_GPU_tests(N = 100, Nz = 20, M = [2, 3, 4, 8]):
     '''
     A function that runs GPU tests to check PyTV is working properly.
     '''
 
-    # tv_schemes = ['downwind', 'upwind', 'central', 'hybrid']
-    tv_schemes = ['hybrid']
+    tv_schemes = ['upwind', 'downwind', 'hybrid', 'central']
+
     print('\nRunning GPU tests:')
     for tv_scheme in tv_schemes:
         print('\nGPU test for TV scheme: '+str(tv_scheme))
@@ -201,50 +202,43 @@ def test_2D_to_3D(tv_scheme, N = 100, Nz = 20, tolerance = 1e-5, cpu_only = Fals
 
     # Direct CPU implementation
     (tv1, G1) = eval('tv_CPU.tv_'+tv_scheme+'(img)')
-    if tv_scheme == 'hybrid':
-        (tv1_3D, G1_3D) = eval('tv_CPU.tv_'+tv_scheme+'(img_3D, match_2D_form = True)')
-    else:
-        (tv1_3D, G1_3D) = eval('tv_CPU.tv_'+tv_scheme+'(img_3D)')
+    (tv1_3D, G1_3D) = eval('tv_CPU.tv_'+tv_scheme+'(img_3D)')
     assert test_equal([tv1, tv1_3D * factor_tv], tolerance = tolerance), 'CPU TV values are not equal'
     assert test_equal([G1, np.reshape(G1_3D[1], G1.shape)], tolerance = tolerance), 'CPU Sub-gradient arrays are not equal'
 
     if not cpu_only:
         # Direct GPU implementation
         (tv2, G2) = eval('tv_GPU.tv_'+tv_scheme+'(img)')
-        if tv_scheme == 'hybrid':
-            (tv2_3D, G2_3D) = eval('tv_GPU.tv_'+tv_scheme+'(img_3D, match_2D_form = True)')
-        else:
-            (tv2_3D, G2_3D) = eval('tv_GPU.tv_'+tv_scheme+'(img_3D)')
+        (tv2_3D, G2_3D) = eval('tv_GPU.tv_'+tv_scheme+'(img_3D)')
         assert test_equal([tv2, tv2_3D * factor_tv], tolerance = tolerance), 'GPU TV values are not equal'
         assert test_equal([G2, np.reshape(G2_3D[1], G2.shape)], tolerance = tolerance), 'GPU Sub-gradient arrays are not equal'
 
-    if tv_scheme != 'hybrid': # TODO: Implement match_2D_form for hybrid operators
-        # Operator CPU implementation
-        D3 = eval('tv_operators_CPU.D_'+tv_scheme+'(img)')
-        tv3 = eval('tv_operators_CPU.compute_L21_norm(D3)')
-        DT_D3 = eval('tv_operators_CPU.D_T_'+tv_scheme+'(D3)')
+    # Operator CPU implementation
+    D3 = eval('tv_operators_CPU.D_'+tv_scheme+'(img)')
+    tv3 = eval('tv_operators_CPU.compute_L21_norm(D3)')
+    DT_D3 = eval('tv_operators_CPU.D_T_'+tv_scheme+'(D3)')
 
-        D3_3D = eval('tv_operators_CPU.D_'+tv_scheme+'(img_3D)')
-        tv3_3D = eval('tv_operators_CPU.compute_L21_norm(D3_3D)')
-        DT_D3_3D = eval('tv_operators_CPU.D_T_'+tv_scheme+'(D3_3D)')
+    D3_3D = eval('tv_operators_CPU.D_'+tv_scheme+'(img_3D, reg_z_over_reg = 0.0)')
+    tv3_3D = eval('tv_operators_CPU.compute_L21_norm(D3_3D)')
+    DT_D3_3D = eval('tv_operators_CPU.D_T_'+tv_scheme+'(D3_3D, reg_z_over_reg = 0.0)')
 
-        assert test_equal([tv3, tv3_3D * factor_tv], tolerance = tolerance), 'CPU TV operators values are not equal'
-        assert test_equal([D3, D3_3D[1,0:2,:,:,:]], tolerance = tolerance), 'CPU D(x) values are not equal'
-        assert test_equal([DT_D3, DT_D3_3D[1:2,:,:,:]], tolerance = tolerance), 'CPU D_T(D(x)) values are not equal'
+    assert test_equal([tv3, tv3_3D * factor_tv], tolerance = tolerance), 'CPU TV operators values are not equal'
+    assert test_equal([D3, D3_3D[1,:,:,:,:]], tolerance = tolerance), 'CPU D(x) values are not equal'
+    assert test_equal([DT_D3, DT_D3_3D[1:2,:,:,:]], tolerance = tolerance), 'CPU D_T(D(x)) values are not equal'
 
-        if not cpu_only:
-            # Operator GPU implementation
-            D4 = eval('tv_operators_GPU.D_'+tv_scheme+'(img)')
-            tv4 = eval('tv_operators_GPU.compute_L21_norm(D4)')
-            DT_D3 = eval('tv_operators_GPU.D_T_'+tv_scheme+'(D4)')
+    if not cpu_only:
+        # Operator GPU implementation
+        D4 = eval('tv_operators_GPU.D_'+tv_scheme+'(img)')
+        tv4 = eval('tv_operators_GPU.compute_L21_norm(D4)')
+        DT_D4  = eval('tv_operators_GPU.D_T_'+tv_scheme+'(D4)')
 
-            D4_3D = eval('tv_operators_GPU.D_'+tv_scheme+'(img_3D)')
-            tv4_3D = eval('tv_operators_GPU.compute_L21_norm(D4_3D)')
-            DT_D4_3D = eval('tv_operators_GPU.D_T_'+tv_scheme+'(D4_3D)')
+        D4_3D = eval('tv_operators_GPU.D_'+tv_scheme+'(img_3D, reg_z_over_reg = 0.0)')
+        tv4_3D = eval('tv_operators_GPU.compute_L21_norm(D4_3D)')
+        DT_D4_3D = eval('tv_operators_GPU.D_T_'+tv_scheme+'(D4_3D, reg_z_over_reg = 0.0)')
 
-            assert test_equal([tv3, tv3_3D * factor_tv], tolerance = tolerance), 'CPU TV operators values are not equal'
-            assert test_equal([D3, D3_3D[1,0:2,:,:,:]], tolerance = tolerance), 'CPU D(x) values are not equal'
-            assert test_equal([DT_D3, DT_D3_3D[1:2,:,:,:]], tolerance = tolerance), 'CPU D_T(D(x)) values are not equal'
+        assert test_equal([tv4, tv4_3D * factor_tv], tolerance = tolerance), 'CPU TV operators values are not equal'
+        assert test_equal([D4, D4_3D[1,:,:,:,:]], tolerance = tolerance), 'CPU D(x) values are not equal'
+        assert test_equal([DT_D4, DT_D4_3D[1:2,:,:,:]], tolerance = tolerance), 'CPU D_T(D(x)) values are not equal'
 
     print('\t[PASS] \tScheme '+tv_scheme+' 2D vs 3D: Equal values for TV, G, D, DT from different implementations')
 
@@ -307,7 +301,7 @@ def test_tv_G_D_DT_3D(tv_scheme, N = 100, Nz = 20, tolerance = 1e-5, cpu_only = 
     else:
         return([time1,time2, time3, time4])
 
-def test_tv_D_DT_4D(tv_scheme, N = 100, Nz = 20, M = [2, 3, 4], reg_time = 1.0, tolerance = 1e-5, cpu_only = False):
+def test_tv_D_DT_4D(tv_scheme, N = 100, Nz = 20, M = [2, 3, 4, 8], reg_time = 1.0, tolerance = 1e-5, cpu_only = False):
     '''
     A function that tests whether the different TV scheme implementations provide the same results for 3D & time data.
 

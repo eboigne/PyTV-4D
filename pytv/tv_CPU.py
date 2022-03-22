@@ -74,7 +74,7 @@ def tv_hybrid(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static 
     tv, grad_norms = pytv.tv_operators_CPU.compute_L21_norm(D_img, return_array=True)
 
     # When non-differentiable, set to 0.
-    grad_norms[grad_norms == 0] = np.inf # not necessary if eps > 0
+    grad_norms[grad_norms == 0] = np.inf
     G = np.zeros_like(img)
 
     # Upwind terms along rows & columns
@@ -146,7 +146,7 @@ def tv_downwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_stati
     tv, grad_norms = pytv.tv_operators_CPU.compute_L21_norm(D_img, return_array=True)
 
     # When non-differentiable, set to 0.
-    grad_norms[grad_norms == 0] = np.inf # not necessary if eps > 0
+    grad_norms[grad_norms == 0] = np.inf
 
     # Careful when reading math: D_img[:,0,:,:,:] does not give r_{m,n,p,q}, but r_{m-1,n,p,q}
     G = np.zeros_like(img)
@@ -197,7 +197,7 @@ def tv_upwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static 
     tv, grad_norms = pytv.tv_operators_CPU.compute_L21_norm(D_img, return_array=True)
 
     # When non-differentiable, set to 0.
-    grad_norms[grad_norms == 0] = np.inf # not necessary if eps > 0
+    grad_norms[grad_norms == 0] = np.inf
 
     G = np.zeros_like(img)
     G[:, :, :, :] += - (D_img[:,0,:,:,:]+D_img[:,1,:,:,:]) / grad_norms[:, :, :, :]
@@ -247,7 +247,7 @@ def tv_central(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static
     tv, grad_norms = pytv.tv_operators_CPU.compute_L21_norm(D_img, return_array=True)
 
     # When non-differentiable, set to 0.
-    grad_norms[grad_norms == 0] = np.inf # not necessary if eps > 0
+    grad_norms[grad_norms == 0] = np.inf
 
     G = np.zeros_like(img)
     G[:, :, 1:, :] += D_img[:,0,:,:-1,:] / grad_norms[:, :, :-1, :]
