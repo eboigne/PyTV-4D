@@ -129,8 +129,8 @@ for it in range(nb_it): # A simple sub-gradient descent algorithm for image deno
 ```
 
 <p align="center">
-<img src="https://raw.githubusercontent.com/eboigne/PyTV-4D/main/pytv/media/img_denoising_cameraman.png" alt="Images of the cameraman"/>
-<img src="https://raw.githubusercontent.com/eboigne/PyTV-4D/main/pytv/media/img_denoising_loss_fct.png" alt="Loss function"/>
+<img src="https://raw.githubusercontent.com/eboigne/PyTV-4D/main/pytv/media/img_denoising_cameraman1.png" alt="Images of the cameraman"/>
+<img src="https://raw.githubusercontent.com/eboigne/PyTV-4D/main/pytv/media/img_denoising_loss_fct1.png" alt="Loss function"/>
 </p>
 
 
@@ -164,7 +164,7 @@ for it in range(nb_it):
 ```
 
 <p align="center">
-<img src="https://raw.githubusercontent.com/eboigne/PyTV-4D/main/pytv/media/img_denoising_loss_fct_CP_GD.png" alt="Loss function"/>
+<img src="https://raw.githubusercontent.com/eboigne/PyTV-4D/main/pytv/media/img_denoising_loss_fct2.png" alt="Loss function"/>
 </p>
 
 # Functions overview
