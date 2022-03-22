@@ -20,7 +20,7 @@ A set of Python routines to compute the Total Variation (TV) of 2D, 3D and 4D (3
 - Functions return subgradients for easy implementation of (sub)-gradient descent.
 - Efficient GPU implementations using PyTorch tensors and convolution kernels.
 - Four different spatial discretization schemes are available: upwind, downwind, central, and hybrid (see below).
-- Operator-form implementation compatible with primal-dual and proximal formulations.
+- Operator-form implementation compatible with primal-dual and proximal formulations (ADMM, Chambolle & Pock algorithm, ...)
 
 # Installation
 
@@ -137,8 +137,7 @@ for it in range(nb_it): # A simple sub-gradient descent algorithm for image deno
 
 ### Accelerated convergence using gradient operators
 Because the loss function with total variation is non-smooth, it is challenging the achieve sufficient convergence with the gradient descent algorithm. 
-Instead, the primal-dual algorithm from Chambolle and Pock (https://doi.org/10.1007/s10851-010-0251-1) achieves faster convergence. 
-To enable easy implementation of such proximal-based algorithm, the calculations of image gradients are available in PyTV-4D. 
+Instead, the primal-dual algorithm from Chambolle and Pock (https://doi.org/10.1007/s10851-010-0251-1) achieves faster convergence. The ADMM algorithm can also be used. To enable easy implementation of such proximal-based algorithm, the calculations of image gradients are available in PyTV-4D. 
 A simple example is presented below in the case of the denoising of the cameraman image:   
 
 ```python
