@@ -1,18 +1,18 @@
 # /*-----------------------------------------------------------------------*\
 # |                                                                         |
-# |                 _____            _______  __      __                    |
-# |                |  __ \          |__   __| \ \    / /                    |
-# |                | |__) |  _   _     | |     \ \  / /                     |
-# |                |  ___/  | | | |    | |      \ \/ /                      |
-# |                | |      | |_| |    | |       \  /                       |
-# |                |_|       \__/ |    |_|        \/                        |
-# |                           __/ |                                         |
-# |                          |___/                                          |
+# |      _____            _______  __      __           _  _   _____        |
+# |     |  __ \          |__   __| \ \    / /          | || | |  __ \       |
+# |     | |__) |  _   _     | |     \ \  / /   ______  | || |_| |  | |      |
+# |     |  ___/  | | | |    | |      \ \/ /   |______| |__   _| |  | |      |
+# |     | |      | |_| |    | |       \  /                | | | |__| |      |
+# |     |_|       \__, |    |_|        \/                 |_| |_____/       |
+# |                __/ |                                                    |
+# |               |___/                                                     |
 # |                                                                         |
 # |                                                                         |
-# |   Author: E. Boigne                                                     |
+# |   Author: Emeric Boigné                                                 |
 # |                                                                         |
-# |   Contact: Emeric Boigne                                                |
+# |   Contact: Emeric Boigné                                                |
 # |   email: emericboigne@gmail.com                                         |
 # |   Department of Mechanical Engineering                                  |
 # |   Stanford University                                                   |
@@ -20,23 +20,23 @@
 # |                                                                         |
 # |-------------------------------------------------------------------------|
 # |                                                                         |
-# |   This file is part of the pyTV package.                                |
+# |   This file is part of the PyTV-4D package.                             |
 # |                                                                         |
 # |   License                                                               |
 # |                                                                         |
-# |   Copyright(C) 2021 E. Boigne                                           |
-# |   pyTV is free software: you can redistribute it and/or modify          |
+# |   Copyright(C) 2021 E. Boigné                                           |
+# |   PyTV-4D is free software: you can redistribute it and/or modify       |
 # |   it under the terms of the GNU General Public License as published by  |
 # |   the Free Software Foundation, either version 3 of the License, or     |
 # |   (at your option) any later version.                                   |
 # |                                                                         |
-# |   pyTV is distributed in the hope that it will be useful,               |
+# |   PyTV-4D is distributed in the hope that it will be useful,            |
 # |   but WITHOUT ANY WARRANTY; without even the implied warranty of        |
 # |   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         |
 # |   GNU General Public License for more details.                          |
 # |                                                                         |
 # |   You should have received a copy of the GNU General Public License     |
-# |   along with pyTV. If not, see <http://www.gnu.org/licenses/>.          |
+# |   along with PyTV-4D. If not, see <http://www.gnu.org/licenses/>.       |
 # |                                                                         |
 # /*-----------------------------------------------------------------------*/
 
@@ -45,7 +45,7 @@ import numpy as np
 import torch
 import pytv.tv_2d_GPU
 
-def tv_hybrid(img, mask = [], reg_z_over_reg = 1.0, match_2D_form = False):
+def tv_hybrid(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static = False, factor_reg_static = 0, return_pytorch_tensor = False, match_2D_form = False):
     '''
     Calculates the total variation and a subgradient of the input image img using the hybrid gradient discretization
 
@@ -68,70 +68,58 @@ def tv_hybrid(img, mask = [], reg_z_over_reg = 1.0, match_2D_form = False):
 
     if mask != []:
         img[~mask] = 0
+    Nz = img.shape[0]
+    M = img.shape[1]
 
-    if len(img.shape) == 2:
-        return(pytv.tv_2d_GPU.tv_hybrid(img))
-    elif (len(img.shape) == 3 and img.shape[0] < 3):
-        return(pytv.tv_2d_GPU.tv_hybrid(img[0]))
+    D_img = pytv.tv_operators_GPU.D_hybrid(img, reg_z_over_reg = reg_z_over_reg, reg_time = reg_time, mask_static = mask_static, factor_reg_static = factor_reg_static, return_pytorch_tensor = True)
+    tv, grad_norms = pytv.tv_operators_GPU.compute_L21_norm(D_img, return_array=True)
 
-    kernel_col = np.array([[[-1,1]]]).astype('float32')
-    kernel_col = torch.as_tensor(np.reshape(kernel_col, (1,1)+kernel_col.shape)).cuda()
+    # When non-differentiable, set to 0.
+    grad_norms[grad_norms == 0] = np.inf # not necessary if eps > 0
+    G = torch.zeros(*img.shape).cuda()
 
-    kernel_row = np.array([[[-1],[1]]]).astype('float32')
-    kernel_row = torch.as_tensor(np.reshape(kernel_row, (1,1)+kernel_row.shape)).cuda()
+    # Upwind terms along rows & columns
+    G[:, :, :, :] += -(D_img[:,0,:,:,:]+D_img[:,1,:,:,:]) / grad_norms[:, :, :, :]
+    G[:, :, 1:, :] += D_img[:,0,:,:-1,:] / grad_norms[:, :, :-1, :]
+    G[:, :, :, 1:] += D_img[:,1,:,:,:-1] / grad_norms[:, :, :, :-1]
 
-    kernel_slice = np.array([[[-1]], [[1]]]).astype('float32')
-    kernel_slice = torch.as_tensor(np.reshape(kernel_slice, (1,1)+kernel_slice.shape)).cuda()
+    # Downwind terms along rows & columns
+    G[:, :, :, :] += (D_img[:,2,:,:,:]+D_img[:,3,:,:,:]) / grad_norms[:, :, :, :]
+    G[:, :, :-1, :] += -D_img[:,2,:,1:,:] / grad_norms[:, :, 1:, :]
+    G[:, :, :, :-1] += -D_img[:,3,:,:,1:] / grad_norms[:, :, :, 1:]
 
-    img = np.reshape(img, (1,1)+img.shape).astype('float32')
-    img_tensor = torch.as_tensor(img).cuda()
-    row_diff_tensor = (torch.zeros_like(img_tensor)).squeeze()
-    col_diff_tensor = (torch.zeros_like(img_tensor)).squeeze()
-    slice_diff_tensor = (torch.zeros_like(img_tensor)).squeeze()
+    i_d = 4
+    if Nz > 1 and reg_z_over_reg > 0:
+        # Upwind terms along slices
+        G[:, :, :, :] += - D_img[:,i_d,:,:,:] / grad_norms[:, :, :, :]
+        G[1:, :, :, :] += D_img[:-1,i_d,:,:,:] / grad_norms[:-1, :, :, :]
+        i_d += 1
 
-    row_diff_tensor[:, :-1, :] = torch.nn.functional.conv3d(img_tensor, kernel_row, bias=None, stride=1, padding = 0).squeeze()
-    col_diff_tensor[:, :, :-1] = torch.nn.functional.conv3d(img_tensor, kernel_col, bias=None, stride=1, padding = 0).squeeze()
-    slice_diff_tensor[:-1, :, :] = np.sqrt(reg_z_over_reg) * torch.nn.functional.conv3d(img_tensor, kernel_slice, bias=None, stride=1, padding = 0).squeeze()
+        # Downwind terms along slices
+        G[:, :, :, :] += D_img[:,i_d,:,:,:] / grad_norms[:, :, :, :]
+        G[:-1, :, :, :] += -D_img[1:,i_d,:,:,:] / grad_norms[1:, :, :, :]
+        i_d += 1
 
-    # To match CPU explicit versions
-    row_diff_tensor[:, :, -1] = 0
-    row_diff_tensor[-1, :, :] = 0
-    col_diff_tensor[:, -1, :] = 0
-    col_diff_tensor[-1, :, :] = 0
-    slice_diff_tensor[:, -1, :] = 0
-    slice_diff_tensor[:, :, -1] = 0
+    if reg_time > 0 and M > 1:
+        # Upwind terms along time
+        G[:, :, :, :] += - D_img[:,i_d,:,:,:] / grad_norms[:, :, :, :]
+        G[:, 1:, :, :] += D_img[:,i_d,:-1,:,:] / grad_norms[:, :-1, :, :]
+        i_d += 1
 
-    grad_norms = (torch.zeros_like(img_tensor)).squeeze()
-    if match_2D_form:
-        grad_norms[:-1, :-1, :-1] = torch.sqrt(torch.square(row_diff_tensor[:-1, :-1, 1:]) + torch.square(row_diff_tensor[:-1, :-1, :-1])
-                                               + torch.square(col_diff_tensor[:-1, 1:, :-1]) + torch.square(col_diff_tensor[:-1, :-1, :-1])
-                                               + torch.square(slice_diff_tensor[:-1, 1:, 1:]) + torch.square(slice_diff_tensor[:-1, :-1, :-1])) / np.sqrt(2)
-    else:
-        grad_norms[:-1, :-1, :-1] = torch.sqrt(torch.square(row_diff_tensor[1:, :-1, 1:]) + torch.square(row_diff_tensor[:-1, :-1, :-1])
-                                               + torch.square(col_diff_tensor[1:, 1:, :-1]) + torch.square(col_diff_tensor[:-1, :-1, :-1])
-                                               + torch.square(slice_diff_tensor[:-1, 1:, 1:]) + torch.square(slice_diff_tensor[:-1, :-1, :-1])) / np.sqrt(2)
-    tv = grad_norms.sum().cpu().detach().numpy().squeeze()
-    grad_norms[grad_norms == 0] = np.inf
+        # Downwind terms along time
+        G[:, :, :, :] += D_img[:,i_d,:,:,:] / grad_norms[:, :, :, :]
+        G[:, :-1, :, :] += -D_img[:,i_d,1:,:,:] / grad_norms[:, 1:, :, :]
+        i_d += 1
 
-    G = torch.zeros_like(img_tensor).squeeze()
+    G /= np.sqrt(2.0)
 
-    G[:-1, :-1, :-1] = - (row_diff_tensor+col_diff_tensor+slice_diff_tensor)[:-1, :-1, :-1]/grad_norms[:-1, :-1, :-1]
-
-    G[:-1, :-1, 1:] += col_diff_tensor[:-1, :-1, :-1]/grad_norms[:-1, :-1, :-1]
-    G[:-1, 1:, :-1] += row_diff_tensor[:-1, :-1, :-1]/grad_norms[:-1, :-1, :-1]
-    G[1:, :-1, :-1] += slice_diff_tensor[:-1, :-1, :-1]/grad_norms[:-1, :-1, :-1]
-
-    G[1:, 1:, :-1] += -col_diff_tensor[1:, 1:, :-1]/grad_norms[:-1, :-1, :-1]
-    G[1:, :-1, 1:] += -row_diff_tensor[1:, :-1, 1:]/grad_norms[:-1, :-1, :-1]
-    G[:-1, 1:, 1:] += -slice_diff_tensor[:-1, 1:, 1:]/grad_norms[:-1, :-1, :-1]
-
-    G[1:, 1:, 1:] += (row_diff_tensor[1:, :-1, 1:] + col_diff_tensor[1:, 1:, :-1] + slice_diff_tensor[:-1, 1:, 1:])/grad_norms[:-1, :-1, :-1]
-
-    G_cpu = G.cpu().detach().numpy().squeeze()
     torch.cuda.empty_cache()
-    del G, grad_norms, row_diff_tensor, col_diff_tensor, slice_diff_tensor, img_tensor, kernel_row, kernel_col, kernel_slice
+    del D_img, grad_norms
 
-    return(tv, G_cpu)
+    if return_pytorch_tensor:
+        return(tv, G)
+    else:
+        return(tv, G.cpu().detach().numpy())
 
 def tv_downwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static = False, factor_reg_static = 0, return_pytorch_tensor = False):
     '''

@@ -1,18 +1,18 @@
 # /*-----------------------------------------------------------------------*\
 # |                                                                         |
-# |                 _____            _______  __      __                    |
-# |                |  __ \          |__   __| \ \    / /                    |
-# |                | |__) |  _   _     | |     \ \  / /                     |
-# |                |  ___/  | | | |    | |      \ \/ /                      |
-# |                | |      | |_| |    | |       \  /                       |
-# |                |_|       \__/ |    |_|        \/                        |
-# |                           __/ |                                         |
-# |                          |___/                                          |
+# |      _____            _______  __      __           _  _   _____        |
+# |     |  __ \          |__   __| \ \    / /          | || | |  __ \       |
+# |     | |__) |  _   _     | |     \ \  / /   ______  | || |_| |  | |      |
+# |     |  ___/  | | | |    | |      \ \/ /   |______| |__   _| |  | |      |
+# |     | |      | |_| |    | |       \  /                | | | |__| |      |
+# |     |_|       \__, |    |_|        \/                 |_| |_____/       |
+# |                __/ |                                                    |
+# |               |___/                                                     |
 # |                                                                         |
 # |                                                                         |
-# |   Author: E. Boigne                                                     |
+# |   Author: Emeric Boigné                                                 |
 # |                                                                         |
-# |   Contact: Emeric Boigne                                                |
+# |   Contact: Emeric Boigné                                                |
 # |   email: emericboigne@gmail.com                                         |
 # |   Department of Mechanical Engineering                                  |
 # |   Stanford University                                                   |
@@ -20,23 +20,23 @@
 # |                                                                         |
 # |-------------------------------------------------------------------------|
 # |                                                                         |
-# |   This file is part of the pyTV package.                                |
+# |   This file is part of the PyTV-4D package.                             |
 # |                                                                         |
 # |   License                                                               |
 # |                                                                         |
-# |   Copyright(C) 2021 E. Boigne                                           |
-# |   pyTV is free software: you can redistribute it and/or modify          |
+# |   Copyright(C) 2021 E. Boigné                                           |
+# |   PyTV-4D is free software: you can redistribute it and/or modify       |
 # |   it under the terms of the GNU General Public License as published by  |
 # |   the Free Software Foundation, either version 3 of the License, or     |
 # |   (at your option) any later version.                                   |
 # |                                                                         |
-# |   pyTV is distributed in the hope that it will be useful,               |
+# |   PyTV-4D is distributed in the hope that it will be useful,            |
 # |   but WITHOUT ANY WARRANTY; without even the implied warranty of        |
 # |   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         |
 # |   GNU General Public License for more details.                          |
 # |                                                                         |
 # |   You should have received a copy of the GNU General Public License     |
-# |   along with pyTV. If not, see <http://www.gnu.org/licenses/>.          |
+# |   along with PyTV-4D. If not, see <http://www.gnu.org/licenses/>.       |
 # |                                                                         |
 # /*-----------------------------------------------------------------------*/
 
