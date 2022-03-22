@@ -43,9 +43,9 @@ Then, the PyTV-4D files can be installed as a package using anaconda:
 ##### Pip
 Alternatively, PyTV-4D can be installed using pip. To do so, install numpy and PyTorch and download the [latest tar release ](https://github.com/eboigne/PyTV-4D/releases) of PyTV-4D. Then, using the downloaded file, run:
 
-`pip install ./PyTV-4D-X.X.X.tar.gz`
+`pip install ./pytv-X.X.X.tar.gz`
 
-If you have trouble with installed dependencies not being recognized with pip, run `pip install --no-deps ./PyTV-4D-X.X.X.tar.gz`. 
+If you have trouble with installed dependencies not being recognized with pip, run `pip install --no-deps ./pytv-X.X.X.tar.gz`. 
 
 ##### Manual installation
 PyTV-4D can also be installed manually with (dependencies need to be set properly):
