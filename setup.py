@@ -51,12 +51,12 @@ requirements = [
 
 setup(
     name='PyTV',
-    version='1.0.1',
+    version='1.1.0',
     description='',
     license='GNUv3',
-    author='Emeric Boigne',
+    author='Emeric Boigné',
     author_email='emericboigne@gmail.com',
-    url='https://github.com/eboigne/PyTV',
+    url='https://github.com/eboigne/PyTV-4D',
     packages=['pytv'],
     install_requires=requirements,
     include_package_data=True, # With this, the non .py files specified in MANIFEST.in are included

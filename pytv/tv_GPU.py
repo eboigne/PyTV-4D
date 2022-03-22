@@ -40,10 +40,9 @@
 # |                                                                         |
 # /*-----------------------------------------------------------------------*/
 
-
 import numpy as np
 import torch
-import pytv.tv_2d_GPU
+import pytv
 
 def tv_hybrid(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static = False, factor_reg_static = 0, return_pytorch_tensor = False):
     '''
@@ -57,12 +56,21 @@ def tv_hybrid(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static 
         A mask used to specify regions of the image ot skip for the TV calculation.
     reg_z_over_reg : float
         The ratio of the regularization parameter in the z direction, versus the x-y plane.
+    reg_time : float
+        The ratio (\mu) of the regularization parameter in the time direction, versus the x-y plane.
+    mask_static : np.ndarray
+        An array of dimensions 1 x 1 x N x N serving as a mask to indicate pixels on which to enforce a different
+        time regularization parameter, for instance used to enforce more static regions in the image.
+    factor_reg_static : float
+        The regularization parameter to compute in the region of the image specified by mask_static.
+    return_pytorch_tensor : boolean
+        Whether to return a numpy np.ndarray or a PyTorch torch.Tensor
 
     Returns
     -------
     tv : float
         The value of the total variation.
-    G_cpu : np.ndarray
+    G : np.ndarray or torch.Tensor
         A sub-gradient array of the total variation term of same dimensions as the input image img.
     '''
 
@@ -76,6 +84,8 @@ def tv_hybrid(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static 
 
     # When non-differentiable, set to 0.
     grad_norms[grad_norms == 0] = np.inf
+
+    # Construct a subgradient G
     G = torch.zeros(*img.shape).cuda()
 
     # Upwind terms along rows & columns
@@ -133,12 +143,21 @@ def tv_downwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_stati
         A mask used to specify regions of the image ot skip for the TV calculation.
     reg_z_over_reg : float
         The ratio of the regularization parameter in the z direction, versus the x-y plane.
+    reg_time : float
+        The ratio (\mu) of the regularization parameter in the time direction, versus the x-y plane.
+    mask_static : np.ndarray
+        An array of dimensions 1 x 1 x N x N serving as a mask to indicate pixels on which to enforce a different
+        time regularization parameter, for instance used to enforce more static regions in the image.
+    factor_reg_static : float
+        The regularization parameter to compute in the region of the image specified by mask_static.
+    return_pytorch_tensor : boolean
+        Whether to return a numpy np.ndarray or a PyTorch torch.Tensor
 
     Returns
     -------
     tv : float
         The value of the total variation.
-    G_cpu : np.ndarray
+    G : np.ndarray or torch.Tensor
         A sub-gradient array of the total variation term of same dimensions as the input image img.
     '''
 
@@ -153,8 +172,10 @@ def tv_downwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_stati
     # When non-differentiable, set to 0.
     grad_norms[grad_norms == 0] = np.inf
 
-    # Careful when reading math: D_img[:,0,:,:,:] does not give r_{m,n,p,q}, but r_{m-1,n,p,q}
+    # Construct a subgradient G
     G = torch.zeros(*img.shape).cuda()
+
+    # Careful when reading math: D_img[:,0,:,:,:] does not give r_{m,n,p,q}, but r_{m-1,n,p,q}
     G[:, :, :, :] += (D_img[:,0,:,:,:]+D_img[:,1,:,:,:]) / grad_norms[:, :, :, :]
     G[:, :, :-1, :] += -D_img[:,0,:,1:,:] / grad_norms[:, :, 1:, :]
     G[:, :, :, :-1] += -D_img[:,1,:,:,1:] / grad_norms[:, :, :, 1:]
@@ -190,12 +211,21 @@ def tv_upwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static 
         A mask used to specify regions of the image ot skip for the TV calculation.
     reg_z_over_reg : float
         The ratio of the regularization parameter in the z direction, versus the x-y plane.
+    reg_time : float
+        The ratio (\mu) of the regularization parameter in the time direction, versus the x-y plane.
+    mask_static : np.ndarray
+        An array of dimensions 1 x 1 x N x N serving as a mask to indicate pixels on which to enforce a different
+        time regularization parameter, for instance used to enforce more static regions in the image.
+    factor_reg_static : float
+        The regularization parameter to compute in the region of the image specified by mask_static.
+    return_pytorch_tensor : boolean
+        Whether to return a numpy np.ndarray or a PyTorch torch.Tensor
 
     Returns
     -------
     tv : float
         The value of the total variation.
-    G_cpu : np.ndarray
+    G : np.ndarray or torch.Tensor
         A sub-gradient array of the total variation term of same dimensions as the input image img.
     '''
 
@@ -209,7 +239,10 @@ def tv_upwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static 
 
     # When non-differentiable, set to 0.
     grad_norms[grad_norms == 0] = np.inf
+
+    # Construct a subgradient G
     G = torch.zeros(*img.shape).cuda()
+
     G[:, :, :, :] += - (D_img[:,0,:,:,:]+D_img[:,1,:,:,:]) / grad_norms[:, :, :, :]
     G[:, :, 1:, :] += D_img[:,0,:,:-1,:] / grad_norms[:, :, :-1, :]
     G[:, :, :, 1:] += D_img[:,1,:,:,:-1] / grad_norms[:, :, :, :-1]
@@ -219,7 +252,6 @@ def tv_upwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static 
         G[:, :, :, :] += - D_img[:,i_d,:,:,:] / grad_norms[:, :, :, :]
         G[1:, :, :, :] += D_img[:-1,i_d,:,:,:] / grad_norms[:-1, :, :, :]
         i_d += 1
-
     if reg_time > 0 and M > 1:
         G[:, :, :, :] += - D_img[:,i_d,:,:,:] / grad_norms[:, :, :, :]
         G[:, 1:, :, :] += D_img[:,i_d,:-1,:,:] / grad_norms[:, :-1, :, :]
@@ -245,12 +277,21 @@ def tv_central(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static
         A mask used to specify regions of the image ot skip for the TV calculation.
     reg_z_over_reg : float
         The ratio of the regularization parameter in the z direction, versus the x-y plane.
+    reg_time : float
+        The ratio (\mu) of the regularization parameter in the time direction, versus the x-y plane.
+    mask_static : np.ndarray
+        An array of dimensions 1 x 1 x N x N serving as a mask to indicate pixels on which to enforce a different
+        time regularization parameter, for instance used to enforce more static regions in the image.
+    factor_reg_static : float
+        The regularization parameter to compute in the region of the image specified by mask_static.
+    return_pytorch_tensor : boolean
+        Whether to return a numpy np.ndarray or a PyTorch torch.Tensor
 
     Returns
     -------
     tv : float
         The value of the total variation.
-    G_cpu : np.ndarray
+    G : np.ndarray or torch.Tensor
         A sub-gradient array of the total variation term of same dimensions as the input image img.
     '''
 
@@ -264,6 +305,8 @@ def tv_central(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static
 
     # When non-differentiable, set to 0.
     grad_norms[grad_norms == 0] = np.inf
+
+    # Construct a subgradient G
     G = torch.zeros(*img.shape).cuda()
 
     G[:, :, 1:, :] += D_img[:,0,:,:-1,:] / grad_norms[:, :, :-1, :]
@@ -290,7 +333,6 @@ def tv_central(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static
         else:
             G[:, 1:, :, :] += D_img[:,i_d,:-1,:,:] / grad_norms[:, :-1, :, :]
             G[:, :-1, :, :] += - D_img[:,i_d,1:,:,:] / grad_norms[:, 1:, :, :]
-
         i_d += 1
 
     G /= 2.0

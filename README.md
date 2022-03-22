@@ -1,4 +1,4 @@
-# PyTV
+# PyTV-4D
 A set of Python routines to compute the Total Variation (TV) of 2D, 3D and 4D images on CPU & GPU, in application to iterative Computed Tomography (CT) reconstructions.
 
 - [Current features](#current-features)
@@ -16,18 +16,17 @@ A set of Python routines to compute the Total Variation (TV) of 2D, 3D and 4D im
 
 # Current features
 
-- Explicit functions to compute the total variation of 2D & 3D images.
-- Functions provide subgradients for easy implementation of (sub)-gradient descent.
+- Explicit functions to compute the total variation of 2D, 3D, and 4D images.
+- Functions return subgradients for easy implementation of (sub)-gradient descent.
 - Efficient GPU implementations using PyTorch tensors and convolution kernels.
+- Four different spatial discretization schemes are available: upwind, downwind, central, and hybrid (see below).
 - Operator-form implementation compatible with primal-dual and proximal formulations.
-- Four different spatial discretization schemes are available: upwind, downwind, centered, and hybrid.
-
 
 # Installation
 
 ### CPU Only
 
-For a quick installation running the CPU routines only, install numpy and PyTV using anaconda, skipping the PyTorch dependency for PyTV:
+For a quick installation running the CPU routines only, install numpy and PyTV-4D using anaconda, skipping the PyTorch dependency for PyTV-4D:
 
 `conda install numpy && conda install --no-deps -c eboigne pytv`
 
@@ -37,19 +36,19 @@ For a quick installation running the CPU routines only, install numpy and PyTV u
 ##### Conda
 First, install PyTorch (version at least 1.5.0) following the guidelines [on the official website](https://pytorch.org/). Make sure to install the correct version for your setup to enable GPU computations.  
 
-Then, the PyTV files can be installed as a package using anaconda:  
+Then, the PyTV-4D files can be installed as a package using anaconda:  
 
 `conda install -c eboigne pytv`
 
 ##### Pip
-Alternatively, PyTV can be installed using pip. To do so, install numpy and PyTorch and download the [latest tar release ](https://github.com/eboigne/PyTV/releases) of PyTV. Then, using the downloaded file, run:
+Alternatively, PyTV-4D can be installed using pip. To do so, install numpy and PyTorch and download the [latest tar release ](https://github.com/eboigne/PyTV-4D/releases) of PyTV-4D. Then, using the downloaded file, run:
 
-`pip install ./PyTV-X.X.X.tar.gz`
+`pip install ./PyTV-4D-X.X.X.tar.gz`
 
-If you have trouble with installed dependencies not being recognized with pip, run `pip install --no-deps ./PyTV-X.X.X.tar.gz`. 
+If you have trouble with installed dependencies not being recognized with pip, run `pip install --no-deps ./PyTV-4D-X.X.X.tar.gz`. 
 
 ##### Manual installation
-PyTV can also be installed manually with (dependencies need to be set properly):
+PyTV-4D can also be installed manually with (dependencies need to be set properly):
 
 `python setup.py install`
 
@@ -92,8 +91,8 @@ print('Sub-gradients from CPU and GPU are equal: '+str(np.prod(np.abs(G1-G2)<1e-
 Output is:
 
 ```
-TV value from CPU: 12763241.060426874
-TV value from GPU: 12763241.0
+TV value from CPU: 532166.8251801673
+TV value from GPU: 532166.8
 Sub-gradients from CPU and GPU are equal: True
 ```
 
@@ -117,6 +116,7 @@ regularization = 25
 step_size = 5e-3 # If step size is too large, loss function may not decrease at every step
 
 cameraman_truth = pytv.utils.cameraman() # Open the cameraman's grayscale image
+cameraman_truth = np.reshape(cameraman_truth, (1,1,)+cameraman_truth.shape)
 cameraman_noisy = cameraman_truth + noise_level * np.random.rand(*cameraman_truth.shape) # Add noise
 cameraman_estimate = np.copy(cameraman_noisy)
 
@@ -128,8 +128,8 @@ for it in range(nb_it): # A simple sub-gradient descent algorithm for image deno
 ```
 
 <p align="center">
-<img src="https://raw.githubusercontent.com/eboigne/PyTV/main/pytv/media/img_denoising_cameraman.png" alt="Images of the cameraman"/>
-<img src="https://raw.githubusercontent.com/eboigne/PyTV/main/pytv/media/img_denoising_loss_fct.png" alt="Loss function"/>
+<img src="https://raw.githubusercontent.com/eboigne/PyTV-4D/main/pytv/media/img_denoising_cameraman.png" alt="Images of the cameraman"/>
+<img src="https://raw.githubusercontent.com/eboigne/PyTV-4D/main/pytv/media/img_denoising_loss_fct.png" alt="Loss function"/>
 </p>
 
 
@@ -137,7 +137,7 @@ for it in range(nb_it): # A simple sub-gradient descent algorithm for image deno
 ### Accelerated convergence using gradient operators
 Because the loss function with total variation is non-smooth, it is challenging the achieve sufficient convergence with the gradient descent algorithm. 
 Instead, the primal-dual algorithm from Chambolle and Pock (https://doi.org/10.1007/s10851-010-0251-1) achieves faster convergence. 
-To enable easy implementation of such proximal-based algorithm, the calculations of image gradients are available in PyTV. 
+To enable easy implementation of such proximal-based algorithm, the calculations of image gradients are available in PyTV-4D. 
 A simple example is presented below in the case of the denoising of the cameraman image:   
 
 ```python
@@ -164,14 +164,15 @@ for it in range(nb_it):
 ```
 
 <p align="center">
-<img src="https://raw.githubusercontent.com/eboigne/PyTV/main/pytv/media/img_denoising_loss_fct_CP_GD.png" alt="Loss function"/>
+<img src="https://raw.githubusercontent.com/eboigne/PyTV-4D/main/pytv/media/img_denoising_loss_fct_CP_GD.png" alt="Loss function"/>
 </p>
 
-# PyTV functions overview
+# Functions overview
 
-PyTV provides the following functions:
+PyTV-4D provides the following functions:
 
-- Direct CPU and GPU, for quick (sub)-gradient descent algorithms (time not currently supported):
+- Direct CPU and GPU, for quick (sub)-gradient descent algorithms:
+
 ```python
 use_GPU = True
 
@@ -187,10 +188,12 @@ img = np.random.rand(Nz, N, N)
 # TV values, and sub-gradient arrays
 tv1, G1 = tv.tv_upwind(img)
 tv2, G2 = tv.tv_downwind(img)
-tv3, G3 = tv.tv_centered(img)
+tv3, G3 = tv.tv_central(img)
 tv4, G4 = tv.tv_hybrid(img)
 ```
+
 - CPU and GPU operators, useful for proximal algorithms (supports time term):
+
 ```python
 use_GPU = True
 
@@ -208,13 +211,13 @@ img = np.random.rand(Nz, M, N, N)
 # Discrete gradient: D_img has size (Nz, Nd, M, N, N) where Nd is the number of difference terms
 D_img1 = tv.D_upwind(img, reg_time = reg_time)
 D_img2 = tv.D_downwind(img, reg_time)
-D_img3 = tv.D_centered(img, reg_time)
+D_img3 = tv.D_central(img, reg_time)
 D_img4 = tv.D_hybrid(img, reg_time)
 
 # Transposed discrete gradient: D_T_D_img has size (Nz, M, N, N)
 D_T_D_img1 = tv.D_T_upwind(D_img1, reg_time)
 D_T_D_img2 = tv.D_T_downwind(D_img2, reg_time)
-D_T_D_img3 = tv.D_T_centered(D_img3, reg_time)
+D_T_D_img3 = tv.D_T_central(D_img3, reg_time)
 D_T_D_img4 = tv.D_T_hybrid(D_img4, reg_time)
 
 # TV values: obtained by computing the L2,1 norm of the image gradient D(img) 
@@ -226,19 +229,13 @@ tv4 = tv.compute_L21_norm(D_img4)
 
 # TV definition
 
-
 <p align="center">
-<img src="https://raw.githubusercontent.com/eboigne/PyTV/main/pytv/media/TV_def.png" alt="TV definition"/>
-<img src="https://raw.githubusercontent.com/eboigne/PyTV/main/pytv/media/TV_table_schemes.png" alt="TV discretization"/>
+<img src="https://raw.githubusercontent.com/eboigne/PyTV-4D/main/pytv/media/TV_def.png" alt="TV definition"/>
+<img src="https://raw.githubusercontent.com/eboigne/PyTV-4D/main/pytv/media/TV_table_schemes.png" alt="TV discretization"/>
 </p>
 
 
 # Comments
 
-- Nz = 2 is a troublesome case, either send data as 2D images, or a 3D chunk of more than 2 images. The different TV implementations will not give the same results in the case Nz = 2
-- Time discretization in the operator forms: the discretization scheme used is the same as the spatial scheme for each discretization. For the `centered` scheme that require M>2, the `upwind` scheme is used instead for the time discretization for cases with M=2.
-- The (Nz, M, N, N) data order is prefered to (M, Nz, N, N) since the CT operations can be decomposed easily along z for parallel beam configurations. 
-
-# To implement
-
-- 3D+t for tv_GPU and tv_CPU
+- The (Nz, M, N, N) data order is prefered to (M, Nz, N, N) since the CT operations can be decomposed easily along z for parallel beam configurations.
+- Time discretization in the operator forms: the discretization scheme used along the time direction is the same as the spatial scheme for each discretization. For the `central` scheme that require M>2, the `upwind` scheme is used instead for the time discretization for cases with M=2.

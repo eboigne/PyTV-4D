@@ -44,7 +44,7 @@
 import numpy as np
 import pytv
 
-def tv_hybrid(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static = False, factor_reg_static = 0, match_2D_form = False):
+def tv_hybrid(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static = False, factor_reg_static = 0):
     '''
     Calculates the total variation and a subgradient of the input image img using the hybrid gradient discretization
 
@@ -56,6 +56,13 @@ def tv_hybrid(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static 
         A mask used to specify regions of the image ot skip for the TV calculation.
     reg_z_over_reg : float
         The ratio of the regularization parameter in the z direction, versus the x-y plane.
+    reg_time : float
+        The ratio (\mu) of the regularization parameter in the time direction, versus the x-y plane.
+    mask_static : np.ndarray
+        An array of dimensions 1 x 1 x N x N serving as a mask to indicate pixels on which to enforce a different
+        time regularization parameter, for instance used to enforce more static regions in the image.
+    factor_reg_static : float
+        The regularization parameter to compute in the region of the image specified by mask_static.
 
     Returns
     -------
@@ -75,6 +82,8 @@ def tv_hybrid(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static 
 
     # When non-differentiable, set to 0.
     grad_norms[grad_norms == 0] = np.inf
+
+    # Construct a subgradient G
     G = np.zeros_like(img)
 
     # Upwind terms along rows & columns
@@ -111,7 +120,6 @@ def tv_hybrid(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static 
         i_d += 1
 
     G /= np.sqrt(2.0)
-
     return (tv, G)
 
 def tv_downwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static = False, factor_reg_static = 0):
@@ -121,13 +129,18 @@ def tv_downwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_stati
     Parameters
     ----------
     img : np.ndarray
-        The array of the input image data of dimensions Nz x M x N x N
+        The array of the input image data of dimensions Nz x M x N x N.
     mask : np.ndarray
         A mask used to specify regions of the image ot skip for the TV calculation.
     reg_z_over_reg : float
         The ratio of the regularization parameter in the z direction, versus the x-y plane.
     reg_time : float
-        The ratio of the regularization parameter in the time direction, versus the x-y plane.
+        The ratio (\mu) of the regularization parameter in the time direction, versus the x-y plane.
+    mask_static : np.ndarray
+        An array of dimensions 1 x 1 x N x N serving as a mask to indicate pixels on which to enforce a different
+        time regularization parameter, for instance used to enforce more static regions in the image.
+    factor_reg_static : float
+        The regularization parameter to compute in the region of the image specified by mask_static.
 
     Returns
     -------
@@ -148,8 +161,9 @@ def tv_downwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_stati
     # When non-differentiable, set to 0.
     grad_norms[grad_norms == 0] = np.inf
 
-    # Careful when reading math: D_img[:,0,:,:,:] does not give r_{m,n,p,q}, but r_{m-1,n,p,q}
+    # Construct a subgradient G
     G = np.zeros_like(img)
+    # Careful when reading math: D_img[:,0,:,:,:] does not give r_{m,n,p,q}, but r_{m-1,n,p,q}
     G[:, :, :, :] += (D_img[:,0,:,:,:]+D_img[:,1,:,:,:]) / grad_norms[:, :, :, :]
     G[:, :, :-1, :] += -D_img[:,0,:,1:,:] / grad_norms[:, :, 1:, :]
     G[:, :, :, :-1] += -D_img[:,1,:,:,1:] / grad_norms[:, :, :, 1:]
@@ -159,7 +173,6 @@ def tv_downwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_stati
         G[:, :, :, :] += D_img[:,i_d,:,:,:] / grad_norms[:, :, :, :]
         G[:-1, :, :, :] += -D_img[1:,i_d,:,:,:] / grad_norms[1:, :, :, :]
         i_d += 1
-
     if reg_time > 0 and M > 1:
         G[:, :, :, :] += D_img[:,i_d,:,:,:] / grad_norms[:, :, :, :]
         G[:, :-1, :, :] += -D_img[:,i_d,1:,:,:] / grad_norms[:, 1:, :, :]
@@ -179,6 +192,13 @@ def tv_upwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static 
         A mask used to specify regions of the image ot skip for the TV calculation.
     reg_z_over_reg : float
         The ratio of the regularization parameter in the z direction, versus the x-y plane.
+    reg_time : float
+        The ratio (\mu) of the regularization parameter in the time direction, versus the x-y plane.
+    mask_static : np.ndarray
+        An array of dimensions 1 x 1 x N x N serving as a mask to indicate pixels on which to enforce a different
+        time regularization parameter, for instance used to enforce more static regions in the image.
+    factor_reg_static : float
+        The regularization parameter to compute in the region of the image specified by mask_static.
 
     Returns
     -------
@@ -199,6 +219,7 @@ def tv_upwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static 
     # When non-differentiable, set to 0.
     grad_norms[grad_norms == 0] = np.inf
 
+    # Construct a subgradient G
     G = np.zeros_like(img)
     G[:, :, :, :] += - (D_img[:,0,:,:,:]+D_img[:,1,:,:,:]) / grad_norms[:, :, :, :]
     G[:, :, 1:, :] += D_img[:,0,:,:-1,:] / grad_norms[:, :, :-1, :]
@@ -209,7 +230,6 @@ def tv_upwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static 
         G[:, :, :, :] += - D_img[:,i_d,:,:,:] / grad_norms[:, :, :, :]
         G[1:, :, :, :] += D_img[:-1,i_d,:,:,:] / grad_norms[:-1, :, :, :]
         i_d += 1
-
     if reg_time > 0 and M > 1:
         G[:, :, :, :] += - D_img[:,i_d,:,:,:] / grad_norms[:, :, :, :]
         G[:, 1:, :, :] += D_img[:,i_d,:-1,:,:] / grad_norms[:, :-1, :, :]
@@ -224,11 +244,18 @@ def tv_central(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static
     Parameters
     ----------
     img : np.ndarray
-        The array of the input image data of dimensions N x N, or Nz x N x N.
+        The array of the input image data of dimensions Nz x M x N x N.
     mask : np.ndarray
         A mask used to specify regions of the image ot skip for the TV calculation.
     reg_z_over_reg : float
         The ratio of the regularization parameter in the z direction, versus the x-y plane.
+    reg_time : float
+        The ratio (\mu) of the regularization parameter in the time direction, versus the x-y plane.
+    mask_static : np.ndarray
+        An array of dimensions 1 x 1 x N x N serving as a mask to indicate pixels on which to enforce a different
+        time regularization parameter, for instance used to enforce more static regions in the image.
+    factor_reg_static : float
+        The regularization parameter to compute in the region of the image specified by mask_static.
 
     Returns
     -------
@@ -249,6 +276,7 @@ def tv_central(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static
     # When non-differentiable, set to 0.
     grad_norms[grad_norms == 0] = np.inf
 
+    # Construct a subgradient G
     G = np.zeros_like(img)
     G[:, :, 1:, :] += D_img[:,0,:,:-1,:] / grad_norms[:, :, :-1, :]
     G[:, :, :-1, :] += - D_img[:,0,:,1:,:] / grad_norms[:, :, 1:, :]
@@ -274,9 +302,7 @@ def tv_central(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static
         else:
             G[:, 1:, :, :] += D_img[:,i_d,:-1,:,:] / grad_norms[:, :-1, :, :]
             G[:, :-1, :, :] += - D_img[:,i_d,1:,:,:] / grad_norms[:, 1:, :, :]
-
         i_d += 1
 
     G /= 2.0
-
     return (tv, G)

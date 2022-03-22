@@ -40,7 +40,6 @@
 # |                                                                         |
 # /*-----------------------------------------------------------------------*/
 
-
 import numpy as np
 
 def compute_L21_norm(D_img, return_array = False):
@@ -53,22 +52,26 @@ def compute_L21_norm(D_img, return_array = False):
     ----------
     D_img : np.ndarray
         The numpy array of the discrete gradient of dimensions Nz x Nd x M x N x N.
+    return_array : boolean
+        Whether to return the array of the L2 norms.
 
     Returns
     -------
-    float
-        The L2,1 norm of the given input array.
+    l21_norm : float
+        The value of the L2,1 norm.
+    out : np.ndarray
+        An array of the L2 norms of size Nz x M x N x N.
     '''
 
     out = np.square(D_img)
     out = np.sum(out, axis = 1)
     out = np.sqrt(out)
-    out_sum = np.sum(out)
+    l21_norm = np.sum(out)
 
     if return_array:
-        return(out_sum, out)
+        return(l21_norm, out)
     else:
-        return(out_sum)
+        return(l21_norm)
 
 def D_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, factor_reg_static = 0):
     '''
@@ -81,9 +84,9 @@ def D_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, facto
     reg_z_over_reg : float
         The ratio of the regularization parameter in the z direction, versus the x-y plane.
     reg_time : float
-        The ratio of the regularization parameter in the time direction, versus the x-y plane.
+        The ratio (\mu) of the regularization parameter in the time direction, versus the x-y plane.
     mask_static : np.ndarray
-        An of dimensions 1 x 1 x N x N serving as a mask to indicate pixels on which to enforce a different
+        An array of dimensions 1 x 1 x N x N serving as a mask to indicate pixels on which to enforce a different
         time regularization parameter, for instance used to enforce more static regions in the image.
     factor_reg_static : float
         The regularization parameter to compute in the region of the image specified by mask_static.
@@ -165,7 +168,12 @@ def D_downwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
     reg_z_over_reg : float
         The ratio of the regularization parameter in the z direction, versus the x-y plane.
     reg_time : float
-        The ratio of the regularization parameter in the time direction, versus the x-y plane.
+        The ratio (\mu) of the regularization parameter in the time direction, versus the x-y plane.
+    mask_static : np.ndarray
+        An array of dimensions 1 x 1 x N x N serving as a mask to indicate pixels on which to enforce a different
+        time regularization parameter, for instance used to enforce more static regions in the image.
+    factor_reg_static : float
+        The regularization parameter to compute in the region of the image specified by mask_static.
 
     Returns
     -------
@@ -224,7 +232,12 @@ def D_upwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, facto
     reg_z_over_reg : float
         The ratio of the regularization parameter in the z direction, versus the x-y plane.
     reg_time : float
-        The ratio of the regularization parameter in the time direction, versus the x-y plane.
+        The ratio (\mu) of the regularization parameter in the time direction, versus the x-y plane.
+    mask_static : np.ndarray
+        An array of dimensions 1 x 1 x N x N serving as a mask to indicate pixels on which to enforce a different
+        time regularization parameter, for instance used to enforce more static regions in the image.
+    factor_reg_static : float
+        The regularization parameter to compute in the region of the image specified by mask_static.
 
     Returns
     -------
@@ -283,7 +296,12 @@ def D_central(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fact
     reg_z_over_reg : float
         The ratio of the regularization parameter in the z direction, versus the x-y plane.
     reg_time : float
-        The ratio of the regularization parameter in the time direction, versus the x-y plane.
+        The ratio (\mu) of the regularization parameter in the time direction, versus the x-y plane.
+    mask_static : np.ndarray
+        An array of dimensions 1 x 1 x N x N serving as a mask to indicate pixels on which to enforce a different
+        time regularization parameter, for instance used to enforce more static regions in the image.
+    factor_reg_static : float
+        The regularization parameter to compute in the region of the image specified by mask_static.
 
     Returns
     -------
@@ -348,9 +366,9 @@ def D_T_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
     reg_z_over_reg : float
         The ratio of the regularization parameter in the z direction, versus the x-y plane.
     reg_time : float
-        The ratio of the regularization parameter in the time direction, versus the x-y plane.
+        The ratio (\mu) of the regularization parameter in the time direction, versus the x-y plane.
     mask_static : np.ndarray
-        An of dimensions 1 x 1 x N x N serving as a mask to indicate pixels on which to enforce a different
+        An array of dimensions 1 x 1 x N x N serving as a mask to indicate pixels on which to enforce a different
         time regularization parameter, for instance used to enforce more static regions in the image.
     factor_reg_static : float
         The regularization parameter to compute in the region of the image specified by mask_static.
@@ -435,7 +453,12 @@ def D_T_downwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, f
     reg_z_over_reg : float
         The ratio of the regularization parameter in the z direction, versus the x-y plane.
     reg_time : float
-        The ratio of the regularization parameter in the time direction, versus the x-y plane.
+        The ratio (\mu) of the regularization parameter in the time direction, versus the x-y plane.
+    mask_static : np.ndarray
+        An array of dimensions 1 x 1 x N x N serving as a mask to indicate pixels on which to enforce a different
+        time regularization parameter, for instance used to enforce more static regions in the image.
+    factor_reg_static : float
+        The regularization parameter to compute in the region of the image specified by mask_static.
 
     Returns
     -------
@@ -495,7 +518,12 @@ def D_T_upwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
     reg_z_over_reg : float
         The ratio of the regularization parameter in the z direction, versus the x-y plane.
     reg_time : float
-        The ratio of the regularization parameter in the time direction, versus the x-y plane.
+        The ratio (\mu) of the regularization parameter in the time direction, versus the x-y plane.
+    mask_static : np.ndarray
+        An array of dimensions 1 x 1 x N x N serving as a mask to indicate pixels on which to enforce a different
+        time regularization parameter, for instance used to enforce more static regions in the image.
+    factor_reg_static : float
+        The regularization parameter to compute in the region of the image specified by mask_static.
 
     Returns
     -------
@@ -554,7 +582,12 @@ def D_T_central(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fa
     reg_z_over_reg : float
         The ratio of the regularization parameter in the z direction, versus the x-y plane.
     reg_time : float
-        The ratio of the regularization parameter in the time direction, versus the x-y plane.
+        The ratio (\mu) of the regularization parameter in the time direction, versus the x-y plane.
+    mask_static : np.ndarray
+        An array of dimensions 1 x 1 x N x N serving as a mask to indicate pixels on which to enforce a different
+        time regularization parameter, for instance used to enforce more static regions in the image.
+    factor_reg_static : float
+        The regularization parameter to compute in the region of the image specified by mask_static.
 
     Returns
     -------

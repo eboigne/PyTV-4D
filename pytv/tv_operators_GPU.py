@@ -40,7 +40,6 @@
 # |                                                                         |
 # /*-----------------------------------------------------------------------*/
 
-
 import numpy as np
 import torch
 
@@ -54,11 +53,15 @@ def compute_L21_norm(D_img, return_array = False):
     ----------
     D_img : np.ndarray or torch.Tensor
         The array of the discrete gradient of dimensions Nz x Nd x M x N x N.
+    return_array : boolean
+        Whether to return the array of the L2 norms.
 
     Returns
     -------
-    float
-        The L2,1 norm of the given input array.
+    l21_norm : float
+        The value of the L2,1 norm.
+    out : np.ndarray or torch.Tensor
+        An array of the L2 norms of size Nz x M x N x N.
     '''
 
     if ~isinstance(D_img, torch.Tensor):
@@ -70,16 +73,16 @@ def compute_L21_norm(D_img, return_array = False):
         out = torch.square(D_img)
     except:
         out = D_img * D_img
+
     out = torch.sum(out, axis = 1)
     out = torch.sqrt(out)
-    out_sum = torch.sum(out)
+    l21_norm = torch.sum(out)
 
     if return_array:
-        return(out_sum.cpu().detach().numpy(), out)
+        return(l21_norm.cpu().detach().numpy(), out)
     else:
         del out
-        return(out_sum.cpu().detach().numpy())
-
+        return(l21_norm.cpu().detach().numpy())
 
 def D_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, factor_reg_static = 0, return_pytorch_tensor = False):
     '''
@@ -92,7 +95,7 @@ def D_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, facto
     reg_z_over_reg : float
         The ratio of the regularization parameter in the z direction, versus the x-y plane.
     reg_time : float
-        The ratio of the regularization parameter in the time direction, versus the x-y plane.
+        The ratio (\mu) of the regularization parameter in the time direction, versus the x-y plane.
     mask_static : np.ndarray
         An array of dimensions 1 x 1 x N x N serving as a mask to indicate pixels on which to enforce a different
         time regularization parameter, for instance used to enforce more static regions in the image.
@@ -103,7 +106,7 @@ def D_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, facto
 
     Returns
     -------
-    np.ndarray
+    np.ndarray or torch.Tensor
         The array of the discretized gradient D(img) of dimensions Nz x Nd x M x N x N.
     '''
 
@@ -205,13 +208,18 @@ def D_downwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
     reg_z_over_reg : float
         The ratio of the regularization parameter in the z direction, versus the x-y plane.
     reg_time : float
-        The ratio of the regularization parameter in the time direction, versus the x-y plane.
+        The ratio (\mu) of the regularization parameter in the time direction, versus the x-y plane.
+    mask_static : np.ndarray
+        An array of dimensions 1 x 1 x N x N serving as a mask to indicate pixels on which to enforce a different
+        time regularization parameter, for instance used to enforce more static regions in the image.
+    factor_reg_static : float
+        The regularization parameter to compute in the region of the image specified by mask_static.
     return_pytorch_tensor : boolean
         Whether to return a numpy np.ndarray or a PyTorch torch.Tensor
 
     Returns
     -------
-    np.ndarray
+    np.ndarray or torch.Tensor
         The array of the discretized gradient D(img) of dimensions Nz x Nd x M x N x N.
     '''
 
@@ -297,13 +305,18 @@ def D_upwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, facto
     reg_z_over_reg : float
         The ratio of the regularization parameter in the z direction, versus the x-y plane.
     reg_time : float
-        The ratio of the regularization parameter in the time direction, versus the x-y plane.
+        The ratio (\mu) of the regularization parameter in the time direction, versus the x-y plane.
+    mask_static : np.ndarray
+        An array of dimensions 1 x 1 x N x N serving as a mask to indicate pixels on which to enforce a different
+        time regularization parameter, for instance used to enforce more static regions in the image.
+    factor_reg_static : float
+        The regularization parameter to compute in the region of the image specified by mask_static.
     return_pytorch_tensor : boolean
         Whether to return a numpy np.ndarray or a PyTorch torch.Tensor
 
     Returns
     -------
-    np.ndarray
+    np.ndarray or torch.Tensor
         The array of the discretized gradient D(img) of dimensions Nz x Nd x M x N x N.
     '''
 
@@ -389,16 +402,20 @@ def D_central(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fact
     reg_z_over_reg : float
         The ratio of the regularization parameter in the z direction, versus the x-y plane.
     reg_time : float
-        The ratio of the regularization parameter in the time direction, versus the x-y plane.
+        The ratio (\mu) of the regularization parameter in the time direction, versus the x-y plane.
+    mask_static : np.ndarray
+        An array of dimensions 1 x 1 x N x N serving as a mask to indicate pixels on which to enforce a different
+        time regularization parameter, for instance used to enforce more static regions in the image.
+    factor_reg_static : float
+        The regularization parameter to compute in the region of the image specified by mask_static.
     return_pytorch_tensor : boolean
         Whether to return a numpy np.ndarray or a PyTorch torch.Tensor
 
     Returns
     -------
-    np.ndarray
+    np.ndarray or torch.Tensor
         The array of the discretized gradient D(img) of dimensions Nz x Nd x M x N x N.
     '''
-
 
     if reg_z_over_reg == np.nan:
         reg_z_over_reg = 0.0
@@ -485,7 +502,7 @@ def D_T_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
     reg_z_over_reg : float
         The ratio of the regularization parameter in the z direction, versus the x-y plane.
     reg_time : float
-        The ratio of the regularization parameter in the time direction, versus the x-y plane.
+        The ratio (\mu) of the regularization parameter in the time direction, versus the x-y plane.
     mask_static : np.ndarray
         An of dimensions 1 x 1 x N x N serving as a mask to indicate pixels on which to enforce a different
         time regularization parameter, for instance used to enforce more static regions in the image.
@@ -496,7 +513,7 @@ def D_T_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
 
     Returns
     -------
-    np.ndarray
+    np.ndarray or torch.Tensor
         The array of the discretized gradient D^T(img) of dimensions Nz x M x N x N.
     '''
 
@@ -613,7 +630,7 @@ def D_T_downwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, f
     reg_z_over_reg : float
         The ratio of the regularization parameter in the z direction, versus the x-y plane.
     reg_time : float
-        The ratio of the regularization parameter in the time direction, versus the x-y plane.
+        The ratio (\mu) of the regularization parameter in the time direction, versus the x-y plane.
     mask_static : np.ndarray
         An of dimensions 1 x 1 x N x N serving as a mask to indicate pixels on which to enforce a different
         time regularization parameter, for instance used to enforce more static regions in the image.
@@ -624,7 +641,7 @@ def D_T_downwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, f
 
     Returns
     -------
-    np.ndarray
+    np.ndarray or torch.Tensor
         The array of the discretized gradient D^T(img) of dimensions Nz x M x N x N.
     '''
 
@@ -714,7 +731,7 @@ def D_T_upwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
     reg_z_over_reg : float
         The ratio of the regularization parameter in the z direction, versus the x-y plane.
     reg_time : float
-        The ratio of the regularization parameter in the time direction, versus the x-y plane.
+        The ratio (\mu) of the regularization parameter in the time direction, versus the x-y plane.
     mask_static : np.ndarray
         An of dimensions 1 x 1 x N x N serving as a mask to indicate pixels on which to enforce a different
         time regularization parameter, for instance used to enforce more static regions in the image.
@@ -725,7 +742,7 @@ def D_T_upwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
 
     Returns
     -------
-    np.ndarray
+    np.ndarray or torch.Tensor
         The array of the discretized gradient D^T(img) of dimensions Nz x M x N x N.
     '''
 
@@ -816,7 +833,7 @@ def D_T_central(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fa
     reg_z_over_reg : float
         The ratio of the regularization parameter in the z direction, versus the x-y plane.
     reg_time : float
-        The ratio of the regularization parameter in the time direction, versus the x-y plane.
+        The ratio (\mu) of the regularization parameter in the time direction, versus the x-y plane.
     mask_static : np.ndarray
         An of dimensions 1 x 1 x N x N serving as a mask to indicate pixels on which to enforce a different
         time regularization parameter, for instance used to enforce more static regions in the image.
@@ -827,10 +844,9 @@ def D_T_central(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fa
 
     Returns
     -------
-    np.ndarray
+    np.ndarray or torch.Tensor
         The array of the discretized gradient D^T(img) of dimensions Nz x M x N x N.
     '''
-
 
     if reg_z_over_reg == np.nan:
         reg_z_over_reg = 0.0
@@ -913,64 +929,3 @@ def D_T_central(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fa
         D_T_img = D_T_img2
 
     return(D_T_img)
-
-
-
-
-
-
-    #
-    # if Nz > 2:
-    #     # Row term
-    #     D_T_img[1:-1,:,2:-2,1:-1] += torch.nn.functional.conv3d(img[1:-1,0:1,:,1:-1,1:-1], kernel_row, bias=None, stride=1, padding = 0)[:,0,:,:,:]
-    #     D_T_img[1:-1,:,-2:,1:-1] += 0.5 * img[1:-1,0,:,-3:-1,1:-1]
-    #     D_T_img[1:-1,:,0:2,1:-1] += -0.5 * img[1:-1,0,:,1:3,1:-1]
-    #
-    #     # Col term
-    #     D_T_img[1:-1,:,1:-1,2:-2] += torch.nn.functional.conv3d(img[1:-1,1:2,:,1:-1,1:-1], kernel_col, bias=None, stride=1, padding = 0)[:,0,:,:,:]
-    #     D_T_img[1:-1,:,1:-1,-2:] += 0.5 * img[1:-1,1,:,1:-1,-3:-1]
-    #     D_T_img[1:-1,:,1:-1,0:2] += -0.5 * img[1:-1,1,:,1:-1,1:3]
-    # else:
-    #     # Row term
-    #     # D_T_img[:,:,2:-2,1:-1] += 0.5 * (img[:,0,:,1:-3,1:-1] - img[:,0,:,3:-1,1:-1])
-    #     D_T_img[:,:,2:-2,1:-1] += torch.nn.functional.conv3d(img[:,0:1,:,1:-1,1:-1], kernel_row, bias=None, stride=1, padding = 0)[:,0,:,:,:]
-    #     D_T_img[:,:,-2:,1:-1] += 0.5 * img[:,0,:,-3:-1,1:-1]
-    #     D_T_img[:,:,0:2,1:-1] += -0.5 * img[:,0,:,1:3,1:-1]
-    #
-    #     # Col term
-    #     # D_T_img[:,:,1:-1,2:-2] += 0.5 * (img[:,1,:,1:-1,1:-3] - img[:,1,:,1:-1,3:-1])
-    #     D_T_img[:,:,1:-1,2:-2] += torch.nn.functional.conv3d(img[:,1:2,:,1:-1,1:-1], kernel_col, bias=None, stride=1, padding = 0)[:,0,:,:,:]
-    #     D_T_img[:,:,1:-1,-2:] += 0.5 * img[:,1,:,1:-1,-3:-1]
-    #     D_T_img[:,:,1:-1,0:2] += -0.5 * img[:,1,:,1:-1,1:3]
-    #
-    # i_d = 2
-    # if Nz > 1 and reg_z_over_reg > 0:
-    #     # z term
-    #     D_T_img[2:-2,:,1:-1,1:-1] += np.sqrt(reg_z_over_reg) * 0.5 * (img[1:-3,i_d,:,1:-1,1:-1]-img[3:-1,i_d,:,1:-1,1:-1])
-    #     D_T_img[0:2,:,1:-1,1:-1] += - np.sqrt(reg_z_over_reg) * 0.5 * img[1:3,i_d,:,1:-1,1:-1]
-    #     D_T_img[-2:,:,1:-1,1:-1] += np.sqrt(reg_z_over_reg) * 0.5 * img[-3:-1,i_d,:,1:-1,1:-1]
-    #     i_d += 1
-    #
-    # if reg_time > 0 and M > 1:
-    #     # time term
-    #     else:
-    #         if Nz > 2:
-    #             D_T_img[1:-1,2:-2,1:-1,1:-1] += np.sqrt(reg_time) * 0.5 * (img[1:-1,i_d,1:-3,1:-1,1:-1]-img[1:-1,i_d,3:-1,1:-1,1:-1])
-    #             D_T_img[1:-1,0:2,1:-1,1:-1] += -np.sqrt(reg_time) * 0.5 * img[1:-1,i_d,1:3,1:-1,1:-1]
-    #             D_T_img[1:-1,-2:,1:-1,1:-1] += np.sqrt(reg_time) * 0.5 * img[1:-1,i_d,-3:-1,1:-1,1:-1]
-    #         else:
-    #             D_T_img[:,2:-2,1:-1,1:-1] += np.sqrt(reg_time) * 0.5 * (img[:,i_d,1:-3,1:-1,1:-1]-img[:,i_d,3:-1,1:-1,1:-1])
-    #             D_T_img[:,0:2,1:-1,1:-1] += -np.sqrt(reg_time) * 0.5 * img[:,i_d,1:3,1:-1,1:-1]
-    #             D_T_img[:,-2:,1:-1,1:-1] += np.sqrt(reg_time) * 0.5 * img[:,i_d,-3:-1,1:-1,1:-1]
-    #     i_d += 1
-    #
-    # del img, kernel_row, kernel_col
-    #
-    # if not return_pytorch_tensor:
-    #     D_T_img2 = D_T_img.cpu().detach().numpy()
-    #     del D_T_img
-    #     D_T_img = D_T_img2
-    #
-    # return(D_T_img)
-
-
