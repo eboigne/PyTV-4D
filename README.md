@@ -192,7 +192,7 @@ tv3, G3 = tv.tv_central(img)
 tv4, G4 = tv.tv_hybrid(img)
 ```
 
-- CPU and GPU operators, useful for proximal algorithms (supports time term):
+- CPU and GPU operators, useful for proximal algorithms:
 
 ```python
 use_GPU = True
@@ -239,3 +239,7 @@ tv4 = tv.compute_L21_norm(D_img4)
 
 - The (Nz, M, N, N) data order is prefered to (M, Nz, N, N) since the CT operations can be decomposed easily along z for parallel beam configurations.
 - Time discretization in the operator forms: the discretization scheme used along the time direction is the same as the spatial scheme for each discretization. For the `central` scheme that require M>2, the `upwind` scheme is used instead for the time discretization for cases with M=2.
+
+# To do
+
+- Replace mask_static, factor_reg_static with a weight matrix of size Nz x M x N x N that is passed directly onto all functions

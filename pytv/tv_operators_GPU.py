@@ -43,7 +43,7 @@
 import numpy as np
 import torch
 
-def compute_L21_norm(D_img, return_array = False):
+def compute_L21_norm(D_img, return_array = False, return_pytorch_tensor = False):
     '''
     Compute the L2,1 norm of an image of discrete differences: |x|_2,1 = \sum_i \sqrt(\sum_j x_{i,j}^2),
     with index i summing over image pixels, and index j summing over the difference terms.
@@ -55,6 +55,8 @@ def compute_L21_norm(D_img, return_array = False):
         The array of the discrete gradient of dimensions Nz x Nd x M x N x N.
     return_array : boolean
         Whether to return the array of the L2 norms.
+    return_pytorch_tensor : boolean
+        Whether to return the L2-norm array as a torch.Tensor or np.ndarray
 
     Returns
     -------
@@ -79,7 +81,10 @@ def compute_L21_norm(D_img, return_array = False):
     l21_norm = torch.sum(out)
 
     if return_array:
-        return(l21_norm.cpu().detach().numpy(), out)
+        if return_pytorch_tensor:
+            return(l21_norm, out)
+        else:
+            return(l21_norm.cpu().detach().numpy(), out)
     else:
         del out
         return(l21_norm.cpu().detach().numpy())
@@ -90,7 +95,7 @@ def D_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, facto
 
     Parameters
     ----------
-    img : np.ndarray
+    img : np.ndarray or torch.Tensor
         The array of the input image data of dimensions Nz x M x N x N.
     reg_z_over_reg : float
         The ratio of the regularization parameter in the z direction, versus the x-y plane.
@@ -124,9 +129,16 @@ def D_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, facto
         N_d += 2
     D_img = torch.zeros([Nz, N_d, M, N, N]).cuda()
 
+    if type(img) == np.ndarray:
+        img_tensor = torch.as_tensor(img.astype('float32')).cuda() # (1, Nz, M, N, N)
+    else:
+        img_tensor = img.cuda()
+        return_pytorch_tensor = True
+    img_tensor = torch.reshape(img_tensor, (1,)+img.shape)
+
     # Reshape input as (M, 1, Nz, N, N), such that can use conv3d directly on Nz (typically Nz >> M).
-    img_tensor = np.reshape(img, (1,)+img.shape).astype('float32') # (1, Nz, M, N, N)
-    img_tensor = torch.as_tensor(np.transpose(img_tensor.astype('float32'), [2, 0, 1, 3, 4])).cuda() # (M, 1, Nz, N, N)
+    img_tensor = torch.transpose(img_tensor, 0, 1)
+    img_tensor = torch.transpose(img_tensor, 0, 2) # (M, 1, Nz, N, N)
 
     kernel_col = np.array([[[-1,1]]]).astype('float32')
     kernel_col = torch.as_tensor(np.reshape(kernel_col, (1,1)+kernel_col.shape)).cuda()
@@ -176,13 +188,12 @@ def D_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, facto
         D_img[:, i_d+1, 1:, :, :] = D_img[:, i_d, :-1, :, :]
 
         if isinstance(mask_static, np.ndarray):
-            mask_static = np.tile(mask_static, [Nz, M, 1, 1])
-
-            D_img_temp = D_img[:,i_d,:,:,:].copy()
+            mask_static = torch.as_tensor(np.tile(mask_static, [Nz, M, 1, 1]))
+            D_img_temp = torch.reshape(torch.clone(D_img[:,i_d,:,:,:]), [Nz, M, N, N])
             D_img_temp[mask_static] *= np.sqrt(factor_reg_static)
             D_img[:,i_d,:,:,:] = D_img_temp
 
-            D_img_temp = D_img[:,i_d+1,:,:,:].copy()
+            D_img_temp = torch.reshape(torch.clone(D_img[:,i_d+1,:,:,:]), [Nz, M, N, N])
             D_img_temp[mask_static] *= np.sqrt(factor_reg_static)
             D_img[:,i_d+1,:,:,:] = D_img_temp
 
@@ -203,7 +214,7 @@ def D_downwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
 
     Parameters
     ----------
-    img : np.ndarray
+    img : np.ndarray or torch.Tensor
         The array of the input image data of dimensions Nz x M x N x N.
     reg_z_over_reg : float
         The ratio of the regularization parameter in the z direction, versus the x-y plane.
@@ -239,9 +250,16 @@ def D_downwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
 
     D_img = torch.zeros([Nz, N_d, M, N, N]).cuda()
 
+    if type(img) == np.ndarray:
+        img_tensor = torch.as_tensor(img.astype('float32')).cuda() # (1, Nz, M, N, N)
+    else:
+        img_tensor = img.cuda()
+        return_pytorch_tensor = True
+    img_tensor = torch.reshape(img_tensor, (1,)+img.shape)
+
     # Reshape input as (M, 1, Nz, N, N), such that can use conv3d directly on Nz (typically Nz >> M).
-    img_tensor = np.reshape(img, (1,)+img.shape).astype('float32') # (1, Nz, M, N, N)
-    img_tensor = torch.as_tensor(np.transpose(img_tensor.astype('float32'), [2, 0, 1, 3, 4])).cuda() # (M, 1, Nz, N, N)
+    img_tensor = torch.transpose(img_tensor, 0, 1)
+    img_tensor = torch.transpose(img_tensor, 0, 2) # (M, 1, Nz, N, N)
 
     kernel_col = np.array([[[-1,1]]]).astype('float32')
     kernel_col = torch.as_tensor(np.reshape(kernel_col, (1,1)+kernel_col.shape)).cuda()
@@ -279,8 +297,8 @@ def D_downwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
         # D_img[:, i_d, 1:, :, :] = np.sqrt(reg_time) * torch.nn.functional.conv3d(img_tensor, kernel_slice, bias=None, stride=1, padding = 0)[:, 0, :, :, :]
 
         if isinstance(mask_static, np.ndarray):
-            mask_static = np.tile(mask_static, [Nz, M, 1, 1])
-            D_img_temp = D_img[:,i_d,:,:,:].copy()
+            mask_static = torch.as_tensor(np.tile(mask_static, [Nz, M, 1, 1]))
+            D_img_temp = torch.reshape(torch.clone(D_img[:,i_d,:,:,:]), [Nz, M, N, N])
             D_img_temp[mask_static] *= np.sqrt(factor_reg_static)
             D_img[:,i_d,:,:,:] = D_img_temp
         i_d += 1
@@ -300,7 +318,7 @@ def D_upwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, facto
 
     Parameters
     ----------
-    img : np.ndarray
+    img : np.ndarray or torch.Tensor
         The array of the input image data of dimensions Nz x M x N x N.
     reg_z_over_reg : float
         The ratio of the regularization parameter in the z direction, versus the x-y plane.
@@ -336,9 +354,16 @@ def D_upwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, facto
 
     D_img = torch.zeros([Nz, N_d, M, N, N]).cuda()
 
+    if type(img) == np.ndarray:
+        img_tensor = torch.as_tensor(img.astype('float32')).cuda() # (1, Nz, M, N, N)
+    else:
+        img_tensor = img.cuda()
+        return_pytorch_tensor = True
+    img_tensor = torch.reshape(img_tensor, (1,)+img.shape)
+
     # Reshape input as (M, 1, Nz, N, N), such that can use conv3d directly on Nz (typically Nz >> M).
-    img_tensor = np.reshape(img, (1,)+img.shape).astype('float32') # (1, Nz, M, N, N)
-    img_tensor = torch.as_tensor(np.transpose(img_tensor.astype('float32'), [2, 0, 1, 3, 4])).cuda() # (M, 1, Nz, N, N)
+    img_tensor = torch.transpose(img_tensor, 0, 1)
+    img_tensor = torch.transpose(img_tensor, 0, 2) # (M, 1, Nz, N, N)
 
     kernel_col = np.array([[[-1,1]]]).astype('float32')
     kernel_col = torch.as_tensor(np.reshape(kernel_col, (1,1)+kernel_col.shape)).cuda()
@@ -376,8 +401,8 @@ def D_upwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, facto
         # D_img[:, i_d, :-1, :, :] = np.sqrt(reg_time) * torch.nn.functional.conv3d(img_tensor, kernel_slice, bias=None, stride=1, padding = 0)[:, 0, :, :, :]
 
         if isinstance(mask_static, np.ndarray):
-            mask_static = np.tile(mask_static, [Nz, M, 1, 1])
-            D_img_temp = D_img[:,i_d,:,:,:].copy()
+            mask_static = torch.as_tensor(np.tile(mask_static, [Nz, M, 1, 1]))
+            D_img_temp = torch.reshape(torch.clone(D_img[:,i_d,:,:,:]), [Nz, M, N, N])
             D_img_temp[mask_static] *= np.sqrt(factor_reg_static)
             D_img[:,i_d,:,:,:] = D_img_temp
         i_d += 1
@@ -397,7 +422,7 @@ def D_central(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fact
 
     Parameters
     ----------
-    img : np.ndarray
+    img : np.ndarray or torch.Tensor
         The array of the input image data of dimensions Nz x M x N x N.
     reg_z_over_reg : float
         The ratio of the regularization parameter in the z direction, versus the x-y plane.
@@ -433,9 +458,16 @@ def D_central(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fact
 
     D_img = torch.zeros([Nz, N_d, M, N, N]).cuda()
 
+    if type(img) == np.ndarray:
+        img_tensor = torch.as_tensor(img.astype('float32')).cuda() # (1, Nz, M, N, N)
+    else:
+        img_tensor = img.cuda()
+        return_pytorch_tensor = True
+    img_tensor = torch.reshape(img_tensor, (1,)+img.shape)
+
     # Reshape input as (M, 1, Nz, N, N), such that can use conv3d directly on Nz (typically Nz >> M).
-    img_tensor = np.reshape(img, (1,)+img.shape).astype('float32') # (1, Nz, M, N, N)
-    img_tensor = torch.as_tensor(np.transpose(img_tensor.astype('float32'), [2, 0, 1, 3, 4])).cuda() # (M, 1, Nz, N, N)
+    img_tensor = torch.transpose(img_tensor, 0, 1)
+    img_tensor = torch.transpose(img_tensor, 0, 2) # (M, 1, Nz, N, N)
 
     kernel_col = np.array([[[-1,0,1]]]).astype('float32')
     kernel_col = torch.as_tensor(np.reshape(kernel_col, (1,1)+kernel_col.shape)).cuda()
@@ -476,8 +508,8 @@ def D_central(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fact
             D_img[:, i_d, 1:-1, :, :] = np.sqrt(reg_time) * (img_tensor[:, 2:, :, :] - img_tensor[:, :-2, :, :])
 
         if isinstance(mask_static, np.ndarray):
-            mask_static = np.tile(mask_static, [Nz, M, 1, 1])
-            D_img_temp = D_img[:,i_d,:,:,:].copy()
+            mask_static = torch.as_tensor(np.tile(mask_static, [Nz, M, 1, 1]))
+            D_img_temp = torch.reshape(torch.clone(D_img[:,i_d,:,:,:]), [Nz, M, N, N])
             D_img_temp[mask_static] *= np.sqrt(factor_reg_static)
             D_img[:,i_d,:,:,:] = D_img_temp
         i_d += 1
@@ -531,6 +563,7 @@ def D_T_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
         img = torch.as_tensor(img.astype('float32')).cuda()
     else:
         img = img.cuda()
+        return_pytorch_tensor = True
 
     kernel_col = np.array([[[1,-1]]]).astype('float32')
     kernel_col = torch.as_tensor(np.reshape(kernel_col, (1,1)+kernel_col.shape)).cuda()
@@ -605,8 +638,9 @@ def D_T_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
         i_d += 1
 
         if isinstance(mask_static, np.ndarray):
-            mask_static = np.tile(mask_static, [Nz, M, 1, 1])
+            mask_static = torch.as_tensor(np.tile(mask_static, [Nz, M, 1, 1]))
             D_T_img_time_update[mask_static] *= np.sqrt(factor_reg_static)
+
         D_T_img += D_T_img_time_update
         i_d += 1
 
@@ -659,6 +693,7 @@ def D_T_downwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, f
         img = torch.as_tensor(img.astype('float32')).cuda()
     else:
         img = img.cuda()
+        return_pytorch_tensor = True
 
     kernel_col = np.array([[[1,-1]]]).astype('float32')
     kernel_col = torch.as_tensor(np.reshape(kernel_col, (1,1)+kernel_col.shape)).cuda()
@@ -706,7 +741,7 @@ def D_T_downwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, f
         D_T_img_time_update[:,-1,:,:] += np.sqrt(reg_time) * img[:,i_d,-1,:,:]
 
         if isinstance(mask_static, np.ndarray):
-            mask_static = np.tile(mask_static, [Nz, M, 1, 1])
+            mask_static = torch.as_tensor(np.tile(mask_static, [Nz, M, 1, 1]))
             D_T_img_time_update[mask_static] *= np.sqrt(factor_reg_static)
         D_T_img += D_T_img_time_update
         i_d += 1
@@ -760,6 +795,7 @@ def D_T_upwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
         img = torch.as_tensor(img.astype('float32')).cuda()
     else:
         img = img.cuda()
+        return_pytorch_tensor = True
 
     kernel_col = np.array([[[1,-1]]]).astype('float32')
     kernel_col = torch.as_tensor(np.reshape(kernel_col, (1,1)+kernel_col.shape)).cuda()
@@ -808,7 +844,7 @@ def D_T_upwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
         D_T_img_time_update[:,-1,:,:] += np.sqrt(reg_time) * img[:,i_d,-2,:,:]
 
         if isinstance(mask_static, np.ndarray):
-            mask_static = np.tile(mask_static, [Nz, M, 1, 1])
+            mask_static = torch.as_tensor(np.tile(mask_static, [Nz, M, 1, 1]))
             D_T_img_time_update[mask_static] *= np.sqrt(factor_reg_static)
         D_T_img += D_T_img_time_update
         i_d += 1
@@ -862,6 +898,7 @@ def D_T_central(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fa
         img = torch.as_tensor(img.astype('float32')).cuda()
     else:
         img = img.cuda()
+        return_pytorch_tensor = True
 
 
     kernel_col = np.array([[[1,0,-1]]]).astype('float32')
@@ -914,7 +951,7 @@ def D_T_central(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fa
             D_T_img_time_update[:, :-2, :, :] += -np.sqrt(reg_time) * img[:, i_d, 1:-1, :, :]
 
         if isinstance(mask_static, np.ndarray):
-            mask_static = np.tile(mask_static, [Nz, M, 1, 1])
+            mask_static = torch.as_tensor(np.tile(mask_static, [Nz, M, 1, 1]))
             D_T_img_time_update[mask_static] *= np.sqrt(factor_reg_static)
         D_T_img += D_T_img_time_update
         i_d += 1
