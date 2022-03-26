@@ -44,7 +44,7 @@ import numpy as np
 import torch
 import pytv
 
-def tv_hybrid(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static = False, factor_reg_static = 0, return_pytorch_tensor = False):
+def tv_hybrid(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static = False, factor_reg_static = 0, return_pytorch_tensor = False): #TODO: Implement input as torch.tensor
     '''
     Calculates the total variation and a subgradient of the input image img using the hybrid gradient discretization
 
