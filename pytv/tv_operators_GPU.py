@@ -46,7 +46,7 @@ import torch
 def compute_L21_norm(D_img, return_array = False, return_pytorch_tensor = False):
     '''
     Compute the L2,1 norm of an image of discrete differences: |x|_2,1 = \sum_i \sqrt(\sum_j x_{i,j}^2),
-    with index i summing over image pixels, and index j summing over the difference terms.
+    with index i summing over image pixels, slices, and times, while index j is summing over the difference terms.
     Usage: TV(img) = reg * compute_L21_norm(D(img))
 
     Parameters

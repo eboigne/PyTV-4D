@@ -44,7 +44,7 @@
 import numpy as np
 import pytv
 
-def tv_hybrid(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static = False, factor_reg_static = 0):
+def tv_hybrid(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static = False, factor_reg_static = 0, return_grad_norms = False):
     '''
     Calculates the total variation and a subgradient of the input image img using the hybrid gradient discretization
 
@@ -63,6 +63,8 @@ def tv_hybrid(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static 
         time regularization parameter, for instance used to enforce more static regions in the image.
     factor_reg_static : float
         The regularization parameter to compute in the region of the image specified by mask_static.
+    return_grad_norms : boolean
+        Whether to return the array of the gradient norms.
 
     Returns
     -------
@@ -120,9 +122,13 @@ def tv_hybrid(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static 
         i_d += 1
 
     G /= np.sqrt(2.0)
-    return (tv, G)
 
-def tv_downwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static = False, factor_reg_static = 0):
+    if return_grad_norms:
+        return(tv, G, grad_norms)
+    else:
+        return(tv, G)
+
+def tv_downwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static = False, factor_reg_static = 0, return_grad_norms = False):
     '''
     Calculates the total variation and a subgradient of the input image img using the downwind gradient discretization
 
@@ -141,6 +147,8 @@ def tv_downwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_stati
         time regularization parameter, for instance used to enforce more static regions in the image.
     factor_reg_static : float
         The regularization parameter to compute in the region of the image specified by mask_static.
+    return_grad_norms : boolean
+        Whether to return the array of the gradient norms.
 
     Returns
     -------
@@ -178,9 +186,12 @@ def tv_downwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_stati
         G[:, :-1, :, :] += -D_img[:,i_d,1:,:,:] / grad_norms[:, 1:, :, :]
         i_d += 1
 
-    return (tv, G)
+    if return_grad_norms:
+        return(tv, G, grad_norms)
+    else:
+        return(tv, G)
 
-def tv_upwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static = False, factor_reg_static = 0):
+def tv_upwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static = False, factor_reg_static = 0, return_grad_norms = False):
     '''
     Calculates the total variation and a subgradient of the input image img using the upwind gradient discretization
 
@@ -199,6 +210,8 @@ def tv_upwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static 
         time regularization parameter, for instance used to enforce more static regions in the image.
     factor_reg_static : float
         The regularization parameter to compute in the region of the image specified by mask_static.
+    return_grad_norms : boolean
+        Whether to return the array of the gradient norms.
 
     Returns
     -------
@@ -235,9 +248,12 @@ def tv_upwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static 
         G[:, 1:, :, :] += D_img[:,i_d,:-1,:,:] / grad_norms[:, :-1, :, :]
         i_d += 1
 
-    return (tv, G)
+    if return_grad_norms:
+        return(tv, G, grad_norms)
+    else:
+        return(tv, G)
 
-def tv_central(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static = False, factor_reg_static = 0):
+def tv_central(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static = False, factor_reg_static = 0, return_grad_norms = False):
     '''
     Calculates the total variation and a subgradient of the input image img using the central gradient discretization
 
@@ -256,6 +272,8 @@ def tv_central(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static
         time regularization parameter, for instance used to enforce more static regions in the image.
     factor_reg_static : float
         The regularization parameter to compute in the region of the image specified by mask_static.
+    return_grad_norms : boolean
+        Whether to return the array of the gradient norms.
 
     Returns
     -------
@@ -305,4 +323,8 @@ def tv_central(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static
         i_d += 1
 
     G /= 2.0
-    return (tv, G)
+
+    if return_grad_norms:
+        return(tv, G, grad_norms)
+    else:
+        return(tv, G)

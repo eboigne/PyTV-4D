@@ -44,13 +44,13 @@ import numpy as np
 import torch
 import pytv
 
-def tv_hybrid(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static = False, factor_reg_static = 0, return_pytorch_tensor = False): #TODO: Implement input as torch.tensor
+def tv_hybrid(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static = False, factor_reg_static = 0, return_pytorch_tensor = False, return_grad_norms = False):
     '''
     Calculates the total variation and a subgradient of the input image img using the hybrid gradient discretization
 
     Parameters
     ----------
-    img : np.ndarray
+    img : np.ndarray or torch.Tensor
         The array of the input image data of dimensions N x N, or Nz x N x N.
     mask : np.ndarray
         A mask used to specify regions of the image ot skip for the TV calculation.
@@ -64,7 +64,9 @@ def tv_hybrid(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static 
     factor_reg_static : float
         The regularization parameter to compute in the region of the image specified by mask_static.
     return_pytorch_tensor : boolean
-        Whether to return a numpy np.ndarray or a PyTorch torch.Tensor
+        Whether to return a numpy np.ndarray or a PyTorch torch.Tensor.
+    return_grad_norms : boolean
+        Whether to return the array of the gradient norms.
 
     Returns
     -------
@@ -123,21 +125,27 @@ def tv_hybrid(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static 
 
     G /= np.sqrt(2.0)
 
-    torch.cuda.empty_cache()
-    del D_img, grad_norms
-
-    if return_pytorch_tensor:
-        return(tv, G)
+    del D_img
+    if not return_grad_norms:
+        del grad_norms
+        if return_pytorch_tensor:
+            return(tv, G)
+        else:
+            return(tv, G.cpu().detach().numpy())
     else:
-        return(tv, G.cpu().detach().numpy())
+        if return_pytorch_tensor:
+            return(tv, G, grad_norms)
+        else:
+            return(tv, G.cpu().detach().numpy(), grad_norms)
 
-def tv_downwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static = False, factor_reg_static = 0, return_pytorch_tensor = False):
+
+def tv_downwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static = False, factor_reg_static = 0, return_pytorch_tensor = False, return_grad_norms = False):
     '''
     Calculates the total variation and a subgradient of the input image img using the downwind gradient discretization
 
     Parameters
     ----------
-    img : np.ndarray
+    img : np.ndarray or torch.Tensor
         The array of the input image data of dimensions N x N, or Nz x N x N.
     mask : np.ndarray
         A mask used to specify regions of the image ot skip for the TV calculation.
@@ -151,7 +159,9 @@ def tv_downwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_stati
     factor_reg_static : float
         The regularization parameter to compute in the region of the image specified by mask_static.
     return_pytorch_tensor : boolean
-        Whether to return a numpy np.ndarray or a PyTorch torch.Tensor
+        Whether to return a numpy np.ndarray or a PyTorch torch.Tensor.
+    return_grad_norms : boolean
+        Whether to return the array of the gradient norms.
 
     Returns
     -------
@@ -191,21 +201,26 @@ def tv_downwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_stati
         G[:, :-1, :, :] += -D_img[:,i_d,1:,:,:] / grad_norms[:, 1:, :, :]
         i_d += 1
 
-    torch.cuda.empty_cache()
-    del D_img, grad_norms
-
-    if return_pytorch_tensor:
-        return(tv, G)
+    del D_img
+    if not return_grad_norms:
+        del grad_norms
+        if return_pytorch_tensor:
+            return(tv, G)
+        else:
+            return(tv, G.cpu().detach().numpy())
     else:
-        return(tv, G.cpu().detach().numpy())
+        if return_pytorch_tensor:
+            return(tv, G, grad_norms)
+        else:
+            return(tv, G.cpu().detach().numpy(), grad_norms)
 
-def tv_upwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static = False, factor_reg_static = 0, return_pytorch_tensor = False):
+def tv_upwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static = False, factor_reg_static = 0, return_pytorch_tensor = False, return_grad_norms = False):
     '''
     Calculates the total variation and a subgradient of the input image img using the upwind gradient discretization
 
     Parameters
     ----------
-    img : np.ndarray
+    img : np.ndarray or torch.Tensor
         The array of the input image data of dimensions N x N, or Nz x N x N.
     mask : np.ndarray
         A mask used to specify regions of the image ot skip for the TV calculation.
@@ -219,7 +234,9 @@ def tv_upwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static 
     factor_reg_static : float
         The regularization parameter to compute in the region of the image specified by mask_static.
     return_pytorch_tensor : boolean
-        Whether to return a numpy np.ndarray or a PyTorch torch.Tensor
+        Whether to return a numpy np.ndarray or a PyTorch torch.Tensor.
+    return_grad_norms : boolean
+        Whether to return the array of the gradient norms.
 
     Returns
     -------
@@ -257,21 +274,26 @@ def tv_upwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static 
         G[:, 1:, :, :] += D_img[:,i_d,:-1,:,:] / grad_norms[:, :-1, :, :]
         i_d += 1
 
-    torch.cuda.empty_cache()
-    del D_img, grad_norms
-
-    if return_pytorch_tensor:
-        return(tv, G)
+    del D_img
+    if not return_grad_norms:
+        del grad_norms
+        if return_pytorch_tensor:
+            return(tv, G)
+        else:
+            return(tv, G.cpu().detach().numpy())
     else:
-        return(tv, G.cpu().detach().numpy())
+        if return_pytorch_tensor:
+            return(tv, G, grad_norms)
+        else:
+            return(tv, G.cpu().detach().numpy(), grad_norms)
 
-def tv_central(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static = False, factor_reg_static = 0, return_pytorch_tensor = False):
+def tv_central(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static = False, factor_reg_static = 0, return_pytorch_tensor = False, return_grad_norms = False):
     '''
     Calculates the total variation and a subgradient of the input image img using the central gradient discretization
 
     Parameters
     ----------
-    img : np.ndarray
+    img : np.ndarray or torch.Tensor
         The array of the input image data of dimensions N x N, or Nz x N x N.
     mask : np.ndarray
         A mask used to specify regions of the image ot skip for the TV calculation.
@@ -285,7 +307,9 @@ def tv_central(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static
     factor_reg_static : float
         The regularization parameter to compute in the region of the image specified by mask_static.
     return_pytorch_tensor : boolean
-        Whether to return a numpy np.ndarray or a PyTorch torch.Tensor
+        Whether to return a numpy np.ndarray or a PyTorch torch.Tensor.
+    return_grad_norms : boolean
+        Whether to return the array of the gradient norms.
 
     Returns
     -------
@@ -337,11 +361,16 @@ def tv_central(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static
 
     G /= 2.0
 
-    torch.cuda.empty_cache()
-    del D_img, grad_norms
-
-    if return_pytorch_tensor:
-        return(tv, G)
+    del D_img
+    if not return_grad_norms:
+        del grad_norms
+        if return_pytorch_tensor:
+            return(tv, G)
+        else:
+            return(tv, G.cpu().detach().numpy())
     else:
-        return(tv, G.cpu().detach().numpy())
+        if return_pytorch_tensor:
+            return(tv, G, grad_norms)
+        else:
+            return(tv, G.cpu().detach().numpy(), grad_norms)
 
