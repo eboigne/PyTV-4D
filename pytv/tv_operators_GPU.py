@@ -89,6 +89,48 @@ def compute_L21_norm(D_img, return_array = False, return_pytorch_tensor = False)
         del out
         return(l21_norm.cpu().detach().numpy())
 
+def type_like(array, array_ref):
+    '''
+    Returns the first array with the same dtype as the second array
+
+    Parameters
+    ----------
+    array : np.ndarray or torch.Tensor
+        The array to convert to a certain dtype
+    array_ref : np.ndarray or torch.Tensor
+        The array of reference from which to copy the dtype
+
+    Returns
+    -------
+    np.ndarray or torch.Tensor
+        The input array with the dtype of the array_ref
+    '''
+
+    # 1/ numpy, numpy
+    if type(array) == np.ndarray and type(array_ref) == np.ndarray:
+        array = array.astype(array_ref.dtype)
+    # 2/ numpy, pyTorch
+    elif type(array) == np.ndarray and type(array_ref) != np.ndarray:
+        if array_ref.dtype == torch.float32:
+            array = array.astype(np.float32)
+        else:
+            array = array.astype(np.float64)
+    # 3/ pyTorch, numpy
+    elif type(array) != np.ndarray and type(array_ref) == np.ndarray:
+        if array_ref.dtype == np.float32:
+            array = array.type(torch.float32)
+        else:
+            array = array.type(torch.float64)
+    # 4/ pyTorch, pyTorch
+    else:
+        if array_ref.dtype == torch.float32:
+            array = array.type(torch.float32)
+        else:
+            array = array.type(torch.float64)
+
+    return(array)
+
+
 def D_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, factor_reg_static = 0, return_pytorch_tensor = False):
     '''
     Calculates the output of the input image img by the operator D (gradient discretized using hybrid scheme)
@@ -128,9 +170,10 @@ def D_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, facto
     if reg_time > 0 and M > 1:
         N_d += 2
     D_img = torch.zeros([Nz, N_d, M, N, N]).cuda()
+    D_img = type_like(D_img, img)
 
     if type(img) == np.ndarray:
-        img_tensor = torch.as_tensor(img.astype('float32')).cuda() # (1, Nz, M, N, N)
+        img_tensor = torch.as_tensor(img).cuda() # (1, Nz, M, N, N)
     else:
         img_tensor = img.cuda()
         return_pytorch_tensor = True
@@ -140,13 +183,13 @@ def D_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, facto
     img_tensor = torch.transpose(img_tensor, 0, 1)
     img_tensor = torch.transpose(img_tensor, 0, 2) # (M, 1, Nz, N, N)
 
-    kernel_col = np.array([[[-1,1]]]).astype('float32')
+    kernel_col = type_like(np.array([[[-1,1]]]), img)
     kernel_col = torch.as_tensor(np.reshape(kernel_col, (1,1)+kernel_col.shape)).cuda()
 
-    kernel_row = np.array([[[-1],[1]]]).astype('float32')
+    kernel_row = type_like(np.array([[[-1],[1]]]), img)
     kernel_row = torch.as_tensor(np.reshape(kernel_row, (1,1)+kernel_row.shape)).cuda()
 
-    kernel_slice = np.array([[[-1]],[[1]]]).astype('float32')
+    kernel_slice = type_like(np.array([[[-1]],[[1]]]), img)
     kernel_slice = torch.as_tensor(np.reshape(kernel_slice, (1,1)+kernel_slice.shape)).cuda()
 
     # The intensity differences across rows (Upwind / Forward)
@@ -249,9 +292,10 @@ def D_downwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
     i_d = 2
 
     D_img = torch.zeros([Nz, N_d, M, N, N]).cuda()
+    D_img = type_like(D_img, img)
 
     if type(img) == np.ndarray:
-        img_tensor = torch.as_tensor(img.astype('float32')).cuda() # (1, Nz, M, N, N)
+        img_tensor = torch.as_tensor(img).cuda() # (1, Nz, M, N, N)
     else:
         img_tensor = img.cuda()
         return_pytorch_tensor = True
@@ -261,13 +305,13 @@ def D_downwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
     img_tensor = torch.transpose(img_tensor, 0, 1)
     img_tensor = torch.transpose(img_tensor, 0, 2) # (M, 1, Nz, N, N)
 
-    kernel_col = np.array([[[-1,1]]]).astype('float32')
+    kernel_col = type_like(np.array([[[-1,1]]]), img)
     kernel_col = torch.as_tensor(np.reshape(kernel_col, (1,1)+kernel_col.shape)).cuda()
 
-    kernel_row = np.array([[[-1],[1]]]).astype('float32')
+    kernel_row = type_like(np.array([[[-1],[1]]]), img)
     kernel_row = torch.as_tensor(np.reshape(kernel_row, (1,1)+kernel_row.shape)).cuda()
 
-    kernel_slice = np.array([[[-1]],[[1]]]).astype('float32')
+    kernel_slice = type_like(np.array([[[-1]],[[1]]]), img)
     kernel_slice = torch.as_tensor(np.reshape(kernel_slice, (1,1)+kernel_slice.shape)).cuda()
 
     # The intensity differences across rows (Downwind / Backward)
@@ -353,9 +397,10 @@ def D_upwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, facto
     i_d = 2
 
     D_img = torch.zeros([Nz, N_d, M, N, N]).cuda()
+    D_img = type_like(D_img, img)
 
     if type(img) == np.ndarray:
-        img_tensor = torch.as_tensor(img.astype('float32')).cuda() # (1, Nz, M, N, N)
+        img_tensor = torch.as_tensor(img).cuda() # (1, Nz, M, N, N)
     else:
         img_tensor = img.cuda()
         return_pytorch_tensor = True
@@ -365,13 +410,13 @@ def D_upwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, facto
     img_tensor = torch.transpose(img_tensor, 0, 1)
     img_tensor = torch.transpose(img_tensor, 0, 2) # (M, 1, Nz, N, N)
 
-    kernel_col = np.array([[[-1,1]]]).astype('float32')
+    kernel_col = type_like(np.array([[[-1,1]]]), img)
     kernel_col = torch.as_tensor(np.reshape(kernel_col, (1,1)+kernel_col.shape)).cuda()
 
-    kernel_row = np.array([[[-1],[1]]]).astype('float32')
+    kernel_row = type_like(np.array([[[-1],[1]]]), img)
     kernel_row = torch.as_tensor(np.reshape(kernel_row, (1,1)+kernel_row.shape)).cuda()
 
-    kernel_slice = np.array([[[-1]],[[1]]]).astype('float32')
+    kernel_slice = type_like(np.array([[[-1]],[[1]]]), img)
     kernel_slice = torch.as_tensor(np.reshape(kernel_slice, (1,1)+kernel_slice.shape)).cuda()
 
     # The intensity differences across rows (Upwind / Forward)
@@ -457,9 +502,10 @@ def D_central(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fact
     i_d = 2
 
     D_img = torch.zeros([Nz, N_d, M, N, N]).cuda()
+    D_img = type_like(D_img, img)
 
     if type(img) == np.ndarray:
-        img_tensor = torch.as_tensor(img.astype('float32')).cuda() # (1, Nz, M, N, N)
+        img_tensor = torch.as_tensor(img).cuda() # (1, Nz, M, N, N)
     else:
         img_tensor = img.cuda()
         return_pytorch_tensor = True
@@ -469,13 +515,13 @@ def D_central(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fact
     img_tensor = torch.transpose(img_tensor, 0, 1)
     img_tensor = torch.transpose(img_tensor, 0, 2) # (M, 1, Nz, N, N)
 
-    kernel_col = np.array([[[-1,0,1]]]).astype('float32')
+    kernel_col = type_like(np.array([[[-1,0,1]]]), img)
     kernel_col = torch.as_tensor(np.reshape(kernel_col, (1,1)+kernel_col.shape)).cuda()
 
-    kernel_row = np.array([[[-1],[0], [1]]]).astype('float32')
+    kernel_row = type_like(np.array([[[-1],[0], [1]]]), img)
     kernel_row = torch.as_tensor(np.reshape(kernel_row, (1,1)+kernel_row.shape)).cuda()
 
-    kernel_slice = np.array([[[-1]], [[0]],[[1]]]).astype('float32')
+    kernel_slice = type_like(np.array([[[-1]], [[0]],[[1]]]), img)
     kernel_slice = torch.as_tensor(np.reshape(kernel_slice, (1,1)+kernel_slice.shape)).cuda()
 
     # The intensity differences across rows (Upwind / Forward)
@@ -558,20 +604,21 @@ def D_T_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
     N = img.shape[-1]
 
     D_T_img = torch.zeros([Nz, M, N, N]).cuda()
+    D_T_img = type_like(D_T_img, img)
 
     if type(img) != torch.Tensor:
-        img = torch.as_tensor(img.astype('float32')).cuda()
+        img = torch.as_tensor(img).cuda()
     else:
         img = img.cuda()
         return_pytorch_tensor = True
 
-    kernel_col = np.array([[[1,-1]]]).astype('float32')
+    kernel_col = type_like(np.array([[[1,-1]]]), img)
     kernel_col = torch.as_tensor(np.reshape(kernel_col, (1,1)+kernel_col.shape)).cuda()
 
-    kernel_row = np.array([[[1],[-1]]]).astype('float32')
+    kernel_row = type_like(np.array([[[1],[-1]]]), img)
     kernel_row = torch.as_tensor(np.reshape(kernel_row, (1,1)+kernel_row.shape)).cuda()
 
-    kernel_slice = np.array([[[1]],[[-1]]]).astype('float32')
+    kernel_slice = type_like(np.array([[[1]],[[-1]]]), img)
     kernel_slice = torch.as_tensor(np.reshape(kernel_slice, (1,1)+kernel_slice.shape)).cuda()
 
     # Forward row term
@@ -688,20 +735,21 @@ def D_T_downwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, f
     N = img.shape[-1]
 
     D_T_img = torch.zeros([Nz, M, N, N]).cuda()
+    D_T_img = type_like(D_T_img, img)
 
     if type(img) != torch.Tensor:
-        img = torch.as_tensor(img.astype('float32')).cuda()
+        img = torch.as_tensor(img).cuda()
     else:
         img = img.cuda()
         return_pytorch_tensor = True
 
-    kernel_col = np.array([[[1,-1]]]).astype('float32')
+    kernel_col = type_like(np.array([[[1,-1]]]), img)
     kernel_col = torch.as_tensor(np.reshape(kernel_col, (1,1)+kernel_col.shape)).cuda()
 
-    kernel_row = np.array([[[1],[-1]]]).astype('float32')
+    kernel_row = type_like(np.array([[[1],[-1]]]), img)
     kernel_row = torch.as_tensor(np.reshape(kernel_row, (1,1)+kernel_row.shape)).cuda()
 
-    kernel_slice = np.array([[[1]],[[-1]]]).astype('float32')
+    kernel_slice = type_like(np.array([[[1]],[[-1]]]), img)
     kernel_slice = torch.as_tensor(np.reshape(kernel_slice, (1,1)+kernel_slice.shape)).cuda()
 
     # Backward row term
@@ -790,20 +838,21 @@ def D_T_upwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
     N = img.shape[-1]
 
     D_T_img = torch.zeros([Nz, M, N, N]).cuda()
+    D_T_img = type_like(D_T_img, img)
 
     if type(img) != torch.Tensor:
-        img = torch.as_tensor(img.astype('float32')).cuda()
+        img = torch.as_tensor(img).cuda()
     else:
         img = img.cuda()
         return_pytorch_tensor = True
 
-    kernel_col = np.array([[[1,-1]]]).astype('float32')
+    kernel_col = type_like(np.array([[[1,-1]]]), img)
     kernel_col = torch.as_tensor(np.reshape(kernel_col, (1,1)+kernel_col.shape)).cuda()
 
-    kernel_row = np.array([[[1],[-1]]]).astype('float32')
+    kernel_row = type_like(np.array([[[1],[-1]]]), img)
     kernel_row = torch.as_tensor(np.reshape(kernel_row, (1,1)+kernel_row.shape)).cuda()
 
-    kernel_slice = np.array([[[1]],[[-1]]]).astype('float32')
+    kernel_slice = type_like(np.array([[[1]],[[-1]]]), img)
     kernel_slice = torch.as_tensor(np.reshape(kernel_slice, (1,1)+kernel_slice.shape)).cuda()
 
     # Forward row term
@@ -893,21 +942,22 @@ def D_T_central(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fa
     N = img.shape[-1]
 
     D_T_img = torch.zeros([Nz, M, N, N]).cuda()
+    D_T_img = type_like(D_T_img, img)
 
     if type(img) != torch.Tensor:
-        img = torch.as_tensor(img.astype('float32')).cuda()
+        img = torch.as_tensor(img).cuda()
     else:
         img = img.cuda()
         return_pytorch_tensor = True
 
 
-    kernel_col = np.array([[[1,0,-1]]]).astype('float32')
+    kernel_col = type_like(np.array([[[1,0,-1]]]), img)
     kernel_col = torch.as_tensor(np.reshape(kernel_col, (1,1)+kernel_col.shape)).cuda()
 
-    kernel_row = np.array([[[1],[0], [-1]]]).astype('float32')
+    kernel_row = type_like(np.array([[[1],[0], [-1]]]), img)
     kernel_row = torch.as_tensor(np.reshape(kernel_row, (1,1)+kernel_row.shape)).cuda()
 
-    kernel_slice = np.array([[[1]],[[0]],[[-1]]]).astype('float32')
+    kernel_slice = type_like(np.array([[[1]],[[0]],[[-1]]]), img)
     kernel_slice = torch.as_tensor(np.reshape(kernel_slice, (1,1)+kernel_slice.shape)).cuda()
 
     # Forward row term

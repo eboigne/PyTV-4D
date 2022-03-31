@@ -88,7 +88,7 @@ def tv_hybrid(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static 
     grad_norms[grad_norms == 0] = np.inf
 
     # Construct a subgradient G
-    G = torch.zeros(*img.shape).cuda()
+    G = torch.zeros(*img.shape, dtype = D_img.dtype).cuda()
 
     # Upwind terms along rows & columns
     G[:, :, :, :] += -(D_img[:,0,:,:,:]+D_img[:,1,:,:,:]) / grad_norms[:, :, :, :]
@@ -136,7 +136,7 @@ def tv_hybrid(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static 
         if return_pytorch_tensor:
             return(tv, G, grad_norms)
         else:
-            return(tv, G.cpu().detach().numpy(), grad_norms)
+            return(tv, G.cpu().detach().numpy(), grad_norms.cpu().detach().numpy())
 
 
 def tv_downwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static = False, factor_reg_static = 0, return_pytorch_tensor = False, return_grad_norms = False):
@@ -183,7 +183,7 @@ def tv_downwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_stati
     grad_norms[grad_norms == 0] = np.inf
 
     # Construct a subgradient G
-    G = torch.zeros(*img.shape).cuda()
+    G = torch.zeros(*img.shape, dtype = D_img.dtype).cuda()
 
     # Careful when reading math: D_img[:,0,:,:,:] does not give r_{m,n,p,q}, but r_{m-1,n,p,q}
     G[:, :, :, :] += (D_img[:,0,:,:,:]+D_img[:,1,:,:,:]) / grad_norms[:, :, :, :]
@@ -212,7 +212,7 @@ def tv_downwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_stati
         if return_pytorch_tensor:
             return(tv, G, grad_norms)
         else:
-            return(tv, G.cpu().detach().numpy(), grad_norms)
+            return(tv, G.cpu().detach().numpy(), grad_norms.cpu().detach().numpy())
 
 def tv_upwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static = False, factor_reg_static = 0, return_pytorch_tensor = False, return_grad_norms = False):
     '''
@@ -258,7 +258,7 @@ def tv_upwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static 
     grad_norms[grad_norms == 0] = np.inf
 
     # Construct a subgradient G
-    G = torch.zeros(*img.shape).cuda()
+    G = torch.zeros(*img.shape, dtype = D_img.dtype).cuda()
 
     G[:, :, :, :] += - (D_img[:,0,:,:,:]+D_img[:,1,:,:,:]) / grad_norms[:, :, :, :]
     G[:, :, 1:, :] += D_img[:,0,:,:-1,:] / grad_norms[:, :, :-1, :]
@@ -285,7 +285,7 @@ def tv_upwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static 
         if return_pytorch_tensor:
             return(tv, G, grad_norms)
         else:
-            return(tv, G.cpu().detach().numpy(), grad_norms)
+            return(tv, G.cpu().detach().numpy(), grad_norms.cpu().detach().numpy())
 
 def tv_central(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static = False, factor_reg_static = 0, return_pytorch_tensor = False, return_grad_norms = False):
     '''
@@ -331,7 +331,7 @@ def tv_central(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static
     grad_norms[grad_norms == 0] = np.inf
 
     # Construct a subgradient G
-    G = torch.zeros(*img.shape).cuda()
+    G = torch.zeros(*img.shape, dtype = D_img.dtype).cuda()
 
     G[:, :, 1:, :] += D_img[:,0,:,:-1,:] / grad_norms[:, :, :-1, :]
     G[:, :, :-1, :] += - D_img[:,0,:,1:,:] / grad_norms[:, :, 1:, :]
@@ -372,5 +372,5 @@ def tv_central(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static
         if return_pytorch_tensor:
             return(tv, G, grad_norms)
         else:
-            return(tv, G.cpu().detach().numpy(), grad_norms)
+            return(tv, G.cpu().detach().numpy(), grad_norms.cpu().detach().numpy())
 

@@ -109,7 +109,7 @@ def D_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, facto
         N_d += 2
     if reg_time > 0 and M > 1:
         N_d += 2
-    D_img = np.zeros([Nz, N_d, M, N, N])
+    D_img = np.zeros([Nz, N_d, M, N, N], dtype = img.dtype)
 
     # The intensity differences across rows (Upwind / Forward)
     D_img[:, 0, :, :-1, :] = img[:, :, 1:, :] - img[:, :, :-1, :]
@@ -194,7 +194,7 @@ def D_downwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
     if reg_time > 0 and M > 1:
         N_d += 1
 
-    D_img = np.zeros([Nz, N_d, M, N, N])
+    D_img = np.zeros([Nz, N_d, M, N, N], dtype = img.dtype)
 
     # The intensity differences across rows (Downwind / Backward)
     D_img[:, 0, :, 1:, :] = (img[:, :, 1:, :] - img[:, :, :-1, :])
@@ -258,7 +258,7 @@ def D_upwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, facto
     if reg_time > 0 and M > 1:
         N_d += 1
 
-    D_img = np.zeros([Nz, N_d, M, N, N])
+    D_img = np.zeros([Nz, N_d, M, N, N], dtype = img.dtype)
 
     # The intensity differences across rows (Upwind / Forward)
     D_img[:, 0, :, :-1, :] = img[:, :, 1:, :] - img[:, :, :-1, :]
@@ -322,7 +322,7 @@ def D_central(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fact
     if reg_time > 0 and M > 1:
         N_d += 1
 
-    D_img = np.zeros([Nz, N_d, M, N, N])
+    D_img = np.zeros([Nz, N_d, M, N, N], dtype = img.dtype)
 
     # The intensity differences across rows
     D_img[:,0,:,1:-1,:] = (img[:,:, 2:,:] - img[:,:, :-2,:])
@@ -387,7 +387,7 @@ def D_T_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
     M = img.shape[2]
     N = img.shape[-1]
 
-    D_T_img = np.zeros([Nz, M, N, N])
+    D_T_img = np.zeros([Nz, M, N, N], dtype = img.dtype)
 
 
     # Forward row term
@@ -422,7 +422,7 @@ def D_T_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
 
     # The intensity differences across time
     if reg_time > 0 and M > 1:
-        D_T_img_time_update = np.zeros_like(D_T_img)
+        D_T_img_time_update = np.zeros_like(D_T_img, dtype = img.dtype)
 
         # Forward time terms
         D_T_img_time_update[:,1:,:,:] += np.sqrt(reg_time) * img[:, i_d, :-1, :, :]
@@ -474,7 +474,7 @@ def D_T_downwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, f
     M = img.shape[2]
     N = img.shape[-1]
 
-    D_T_img = np.zeros([Nz, M, N, N])
+    D_T_img = np.zeros([Nz, M, N, N], dtype = img.dtype)
 
     # Backward row term
     D_T_img[:,:,1:,:] += img[:, 0, :, 1:, :]
@@ -493,7 +493,7 @@ def D_T_downwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, f
 
     # The intensity differences across time
     if reg_time > 0 and M > 1:
-        D_T_img_time_update = np.zeros_like(D_T_img)
+        D_T_img_time_update = np.zeros_like(D_T_img, dtype = img.dtype)
 
         D_T_img_time_update[:, 1:, :, :] += np.sqrt(reg_time) * img[:, i_d, 1:, :,:]
         D_T_img_time_update[:, :-1, :, :] += - np.sqrt(reg_time) * img[:, i_d, 1:,:,:]
@@ -538,7 +538,7 @@ def D_T_upwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
     Nd = img.shape[1]
     M = img.shape[2]
     N = img.shape[-1]
-    D_T_img = np.zeros([Nz, M, N, N])
+    D_T_img = np.zeros([Nz, M, N, N], dtype = img.dtype)
 
     # Forward row term
     D_T_img[:,:,1:,:] += img[:,0,:,:-1,:]
@@ -557,7 +557,7 @@ def D_T_upwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
 
     # The intensity differences across time
     if reg_time > 0 and M > 1:
-        D_T_img_time_update = np.zeros_like(D_T_img)
+        D_T_img_time_update = np.zeros_like(D_T_img, dtype = img.dtype)
 
         D_T_img_time_update[:,1:,:,:] += np.sqrt(reg_time) * img[:, i_d, :-1, :, :]
         D_T_img_time_update[:,:-1,:,:] += -np.sqrt(reg_time) * img[:, i_d, :-1, :, :]
@@ -603,7 +603,7 @@ def D_T_central(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fa
     N = img.shape[-1]
         
     M = img.shape[2]
-    D_T_img = np.zeros([Nz, M, N, N])
+    D_T_img = np.zeros([Nz, M, N, N], dtype = img.dtype)
 
     # The intensity differences across rows
     D_T_img[:,:, 2:,:] += img[:,0,:,1:-1,:]
@@ -626,7 +626,7 @@ def D_T_central(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fa
 
     # The intensity differences across times
     if reg_time > 0 and M > 1:
-        D_T_img_time_update = np.zeros_like(D_T_img)
+        D_T_img_time_update = np.zeros_like(D_T_img, dtype = img.dtype)
 
         if M == 2: # Use upwind scheme instead
             D_T_img_time_update[:, 1:, :, :] += np.sqrt(reg_time) * img[:, i_d, :-1, :, :]

@@ -86,7 +86,7 @@ def tv_hybrid(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static 
     grad_norms[grad_norms == 0] = np.inf
 
     # Construct a subgradient G
-    G = np.zeros_like(img)
+    G = np.zeros_like(img, dtype = D_img.dtype)
 
     # Upwind terms along rows & columns
     G[:, :, :, :] += -(D_img[:,0,:,:,:]+D_img[:,1,:,:,:]) / grad_norms[:, :, :, :]
@@ -170,7 +170,8 @@ def tv_downwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_stati
     grad_norms[grad_norms == 0] = np.inf
 
     # Construct a subgradient G
-    G = np.zeros_like(img)
+    G = np.zeros_like(img, dtype = D_img.dtype)
+
     # Careful when reading math: D_img[:,0,:,:,:] does not give r_{m,n,p,q}, but r_{m-1,n,p,q}
     G[:, :, :, :] += (D_img[:,0,:,:,:]+D_img[:,1,:,:,:]) / grad_norms[:, :, :, :]
     G[:, :, :-1, :] += -D_img[:,0,:,1:,:] / grad_norms[:, :, 1:, :]
@@ -233,7 +234,8 @@ def tv_upwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static 
     grad_norms[grad_norms == 0] = np.inf
 
     # Construct a subgradient G
-    G = np.zeros_like(img)
+    G = np.zeros_like(img, dtype = D_img.dtype)
+
     G[:, :, :, :] += - (D_img[:,0,:,:,:]+D_img[:,1,:,:,:]) / grad_norms[:, :, :, :]
     G[:, :, 1:, :] += D_img[:,0,:,:-1,:] / grad_norms[:, :, :-1, :]
     G[:, :, :, 1:] += D_img[:,1,:,:,:-1] / grad_norms[:, :, :, :-1]
@@ -295,7 +297,8 @@ def tv_central(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static
     grad_norms[grad_norms == 0] = np.inf
 
     # Construct a subgradient G
-    G = np.zeros_like(img)
+    G = np.zeros_like(img, dtype = D_img.dtype)
+
     G[:, :, 1:, :] += D_img[:,0,:,:-1,:] / grad_norms[:, :, :-1, :]
     G[:, :, :-1, :] += - D_img[:,0,:,1:,:] / grad_norms[:, :, 1:, :]
 

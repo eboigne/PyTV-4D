@@ -3,8 +3,8 @@ A set of Python routines to compute the Total Variation (TV) of 2D, 3D and 4D (3
 
 - [Current features](#current-features)
 - [Installation](#installation)
-    + [CPU Only](#cpu-only)
     + [CPU & GPU](#cpu---gpu)
+    + [CPU Only](#cpu-only)
     + [Testing](#testing)
 - [Getting started](#getting-started)
     + [Computing TV and subgradient](#computing-tv-and-subgradient)
@@ -23,13 +23,6 @@ A set of Python routines to compute the Total Variation (TV) of 2D, 3D and 4D (3
 - Operator-form implementation compatible with primal-dual and proximal formulations (ADMM, Chambolle & Pock algorithm, ...)
 
 # Installation
-
-### CPU Only
-
-For a quick installation running the CPU routines only, install numpy and PyTV-4D using anaconda, skipping the PyTorch dependency for PyTV-4D:
-
-`conda install numpy && conda install --no-deps -c eboigne pytv`
-
 
 ### CPU & GPU
 
@@ -51,6 +44,12 @@ If you have trouble with installed dependencies not being recognized with pip, r
 PyTV-4D can also be installed manually with (dependencies need to be set properly):
 
 `python setup.py install`
+
+### CPU Only
+
+For a quick installation running the CPU routines only, install numpy and PyTV-4D using anaconda, skipping the PyTorch dependency for PyTV-4D:
+
+`conda install numpy && conda install --no-deps -c eboigne pytv`
 
 ### Testing
 
