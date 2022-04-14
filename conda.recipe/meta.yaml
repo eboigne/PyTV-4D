@@ -81,6 +81,6 @@ requirements:
 
 about:
   home: https://github.com/eboigne/PyTV
-  summary: A set of Python routines to compute the Total Variation (TV) of 2D and 3D images on CPU & GPU, in application to iterative Computed Tomography (CT) reconstructions. 
+  summary: Python routines to compute the Total Variation (TV) of 2D, 3D and 4D images on CPU & GPU. Compatible with proximal algorithms (ADMM, Chambolle & Pock, ...).
   license: {{ data.get('license') }}
   license_file: LICENSE

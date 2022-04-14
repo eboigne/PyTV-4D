@@ -163,6 +163,9 @@ def D_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, facto
     Nz = img.shape[0]
     M = img.shape[1]
     N = img.shape[-1]
+    sqrt_reg_time = np.sqrt(reg_time)
+    sqrt_reg_z_over_reg = np.sqrt(reg_z_over_reg)
+    sqrt_factor_reg_static = np.sqrt(factor_reg_static)
 
     N_d = 4
     if Nz > 1 and reg_z_over_reg > 0:
@@ -211,7 +214,7 @@ def D_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, facto
     i_d = 4
     if Nz > 1 and reg_z_over_reg > 0:
         # The intensity differences across slices (Upwind / Forward) (Transpose to switch M and Nz)
-        D_img[:-1, i_d, :, :, :] = np.sqrt(reg_z_over_reg) * torch.transpose(torch.nn.functional.conv3d(img_tensor, kernel_slice, bias=None, stride=1, padding = 0)[:, 0, :, :, :], 1, 0)
+        D_img[:-1, i_d, :, :, :] = sqrt_reg_z_over_reg * torch.transpose(torch.nn.functional.conv3d(img_tensor, kernel_slice, bias=None, stride=1, padding = 0)[:, 0, :, :, :], 1, 0)
         i_d += 1
 
         # The intensity differences across slices (Downwind / Backward) (Transpose to switch M and Nz)
@@ -225,20 +228,14 @@ def D_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, facto
     if reg_time > 0 and M > 1:
 
         # The intensity differences across times (Upwind / Forward)
-        D_img[:, i_d, :-1, :, :] = np.sqrt(reg_time) * (img_tensor[:, 1:, :, :] - img_tensor[:, :-1, :, :])
+        D_img[:, i_d, :-1, :, :] = sqrt_reg_time * (img_tensor[:, 1:, :, :] - img_tensor[:, :-1, :, :])
 
         # The intensity differences across time (Downwind / Backward)
         D_img[:, i_d+1, 1:, :, :] = D_img[:, i_d, :-1, :, :]
 
-        if isinstance(mask_static, np.ndarray):
-            mask_static = torch.as_tensor(np.tile(mask_static, [Nz, M, 1, 1]))
-            D_img_temp = torch.reshape(torch.clone(D_img[:,i_d,:,:,:]), [Nz, M, N, N])
-            D_img_temp[mask_static] *= np.sqrt(factor_reg_static)
-            D_img[:,i_d,:,:,:] = D_img_temp
-
-            D_img_temp = torch.reshape(torch.clone(D_img[:,i_d+1,:,:,:]), [Nz, M, N, N])
-            D_img_temp[mask_static] *= np.sqrt(factor_reg_static)
-            D_img[:,i_d+1,:,:,:] = D_img_temp
+        if not isinstance(mask_static, bool):
+            mask_4D_broadcast = torch.broadcast_to(mask_static, [Nz, 2, M, N, N])
+            D_img[:,i_d:i_d+2,:,:,:][mask_4D_broadcast] *= sqrt_factor_reg_static
 
         i_d += 2
 
@@ -283,6 +280,9 @@ def D_downwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
     Nz = img.shape[0]
     M = img.shape[1]
     N = img.shape[-1]
+    sqrt_reg_time = np.sqrt(reg_time)
+    sqrt_reg_z_over_reg = np.sqrt(reg_z_over_reg)
+    sqrt_factor_reg_static = np.sqrt(factor_reg_static)
 
     N_d = 2
     if Nz > 1 and reg_z_over_reg > 0:
@@ -326,7 +326,7 @@ def D_downwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
     # (Transpose to switch M and Nz)
     i_d = 2
     if Nz > 1 and reg_z_over_reg > 0:
-        D_img[1:, i_d, :, :, :] = np.sqrt(reg_z_over_reg) * torch.transpose(torch.nn.functional.conv3d(img_tensor, kernel_slice, bias=None, stride=1, padding = 0)[:, 0, :, :, :], 1, 0)
+        D_img[1:, i_d, :, :, :] = sqrt_reg_z_over_reg * torch.transpose(torch.nn.functional.conv3d(img_tensor, kernel_slice, bias=None, stride=1, padding = 0)[:, 0, :, :, :], 1, 0)
         i_d += 1
 
     # Reshape from (M, 1, Nz, N, N) to (Nz, M, N, N)
@@ -336,15 +336,14 @@ def D_downwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
     # Given that M is usually <10, it's not worth using the convolution operator there
     if reg_time > 0 and M > 1:
 
-        # D_img[:, i_d, 1:, :, :] = np.sqrt(reg_time) * torch.reshape(torch.as_tensor((img[:, 1:, :, :] - img[:, :-1, :, :])), [Nz, M-1, N, N])
-        D_img[:, i_d, 1:, :, :] = np.sqrt(reg_time) * (img_tensor[:, 1:, :, :] - img_tensor[:, :-1, :, :])
-        # D_img[:, i_d, 1:, :, :] = np.sqrt(reg_time) * torch.nn.functional.conv3d(img_tensor, kernel_slice, bias=None, stride=1, padding = 0)[:, 0, :, :, :]
+        # D_img[:, i_d, 1:, :, :] = sqrt_reg_time * torch.reshape(torch.as_tensor((img[:, 1:, :, :] - img[:, :-1, :, :])), [Nz, M-1, N, N])
+        D_img[:, i_d, 1:, :, :] = sqrt_reg_time * (img_tensor[:, 1:, :, :] - img_tensor[:, :-1, :, :])
+        # D_img[:, i_d, 1:, :, :] = sqrt_reg_time * torch.nn.functional.conv3d(img_tensor, kernel_slice, bias=None, stride=1, padding = 0)[:, 0, :, :, :]
 
-        if isinstance(mask_static, np.ndarray):
-            mask_static = torch.as_tensor(np.tile(mask_static, [Nz, M, 1, 1]))
-            D_img_temp = torch.reshape(torch.clone(D_img[:,i_d,:,:,:]), [Nz, M, N, N])
-            D_img_temp[mask_static] *= np.sqrt(factor_reg_static)
-            D_img[:,i_d,:,:,:] = D_img_temp
+        if not isinstance(mask_static, bool):
+            mask_4D_broadcast = torch.broadcast_to(mask_static, [Nz, 1, M, N, N])
+            D_img[:,i_d:i_d+1,:,:,:][mask_4D_broadcast] *= sqrt_factor_reg_static
+
         i_d += 1
 
     del img_tensor, kernel_row, kernel_col, kernel_slice
@@ -388,6 +387,9 @@ def D_upwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, facto
     Nz = img.shape[0]
     M = img.shape[1]
     N = img.shape[-1]
+    sqrt_reg_time = np.sqrt(reg_time)
+    sqrt_reg_z_over_reg = np.sqrt(reg_z_over_reg)
+    sqrt_factor_reg_static = np.sqrt(factor_reg_static)
 
     N_d = 2
     if Nz > 1 and reg_z_over_reg > 0:
@@ -431,7 +433,7 @@ def D_upwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, facto
     # (Transpose to switch M and Nz)
     i_d = 2
     if Nz > 1 and reg_z_over_reg > 0:
-        D_img[:-1, i_d, :, :, :] = np.sqrt(reg_z_over_reg) * torch.transpose(torch.nn.functional.conv3d(img_tensor, kernel_slice, bias=None, stride=1, padding = 0)[:, 0, :, :, :], 1, 0)
+        D_img[:-1, i_d, :, :, :] = sqrt_reg_z_over_reg * torch.transpose(torch.nn.functional.conv3d(img_tensor, kernel_slice, bias=None, stride=1, padding = 0)[:, 0, :, :, :], 1, 0)
         i_d += 1
 
     # Reshape from (M, 1, Nz, N, N) to (Nz, M, N, N)
@@ -441,15 +443,14 @@ def D_upwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, facto
     # Given that M is usually <10, it's not worth using the convolution operator there
     if reg_time > 0 and M > 1:
 
-        # D_img[:, i_d, :-1, :, :] = np.sqrt(reg_time) * torch.reshape(torch.as_tensor((img[:, 1:, :, :] - img[:, :-1, :, :])), [Nz, M-1, N, N])
-        D_img[:, i_d, :-1, :, :] = np.sqrt(reg_time) * (img_tensor[:, 1:, :, :] - img_tensor[:, :-1, :, :])
-        # D_img[:, i_d, :-1, :, :] = np.sqrt(reg_time) * torch.nn.functional.conv3d(img_tensor, kernel_slice, bias=None, stride=1, padding = 0)[:, 0, :, :, :]
+        # D_img[:, i_d, :-1, :, :] = sqrt_reg_time * torch.reshape(torch.as_tensor((img[:, 1:, :, :] - img[:, :-1, :, :])), [Nz, M-1, N, N])
+        D_img[:, i_d, :-1, :, :] = sqrt_reg_time * (img_tensor[:, 1:, :, :] - img_tensor[:, :-1, :, :])
+        # D_img[:, i_d, :-1, :, :] = sqrt_reg_time * torch.nn.functional.conv3d(img_tensor, kernel_slice, bias=None, stride=1, padding = 0)[:, 0, :, :, :]
 
-        if isinstance(mask_static, np.ndarray):
-            mask_static = torch.as_tensor(np.tile(mask_static, [Nz, M, 1, 1]))
-            D_img_temp = torch.reshape(torch.clone(D_img[:,i_d,:,:,:]), [Nz, M, N, N])
-            D_img_temp[mask_static] *= np.sqrt(factor_reg_static)
-            D_img[:,i_d,:,:,:] = D_img_temp
+        if not isinstance(mask_static, bool):
+            mask_4D_broadcast = torch.broadcast_to(mask_static, [Nz, 1, M, N, N])
+            D_img[:,i_d:i_d+1,:,:,:][mask_4D_broadcast] *= sqrt_factor_reg_static
+
         i_d += 1
 
     del img_tensor, kernel_row, kernel_col, kernel_slice
@@ -493,6 +494,9 @@ def D_central(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fact
     Nz = img.shape[0]
     M = img.shape[1]
     N = img.shape[-1]
+    sqrt_reg_time = np.sqrt(reg_time)
+    sqrt_reg_z_over_reg = np.sqrt(reg_z_over_reg)
+    sqrt_factor_reg_static = np.sqrt(factor_reg_static)
 
     N_d = 2
     if Nz > 1 and reg_z_over_reg > 0:
@@ -537,9 +541,9 @@ def D_central(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fact
     i_d = 2
     if Nz > 1 and reg_z_over_reg > 0:
         if Nz == 2: # Use upwind scheme instead
-            D_img[:-1, i_d, :, :, :] = np.sqrt(reg_z_over_reg) * (img_tensor[1:, :, :, :] - img_tensor[:-1, :, :, :])
+            D_img[:-1, i_d, :, :, :] = sqrt_reg_z_over_reg * (img_tensor[1:, :, :, :] - img_tensor[:-1, :, :, :])
         else:
-            D_img[1:-1, i_d, :, :, :] = np.sqrt(reg_z_over_reg) * torch.transpose(torch.nn.functional.conv3d(img_tensor, kernel_slice, bias=None, stride=1, padding = 0)[:, 0, :, :, :], 1, 0)
+            D_img[1:-1, i_d, :, :, :] = sqrt_reg_z_over_reg * torch.transpose(torch.nn.functional.conv3d(img_tensor, kernel_slice, bias=None, stride=1, padding = 0)[:, 0, :, :, :], 1, 0)
         i_d += 1
 
     # Reshape from (M, 1, Nz, N, N) to (Nz, M, N, N)
@@ -549,15 +553,14 @@ def D_central(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fact
     # Given that M is usually <10, it's not worth using the convolution operator there
     if reg_time > 0 and M > 1:
         if M == 2: # Use upwind scheme instead
-            D_img[:, i_d, :-1, :, :] = np.sqrt(reg_time) * (img_tensor[:, 1:, :, :] - img_tensor[:, :-1, :, :])
+            D_img[:, i_d, :-1, :, :] = sqrt_reg_time * (img_tensor[:, 1:, :, :] - img_tensor[:, :-1, :, :])
         else:
-            D_img[:, i_d, 1:-1, :, :] = np.sqrt(reg_time) * (img_tensor[:, 2:, :, :] - img_tensor[:, :-2, :, :])
+            D_img[:, i_d, 1:-1, :, :] = sqrt_reg_time * (img_tensor[:, 2:, :, :] - img_tensor[:, :-2, :, :])
 
-        if isinstance(mask_static, np.ndarray):
-            mask_static = torch.as_tensor(np.tile(mask_static, [Nz, M, 1, 1]))
-            D_img_temp = torch.reshape(torch.clone(D_img[:,i_d,:,:,:]), [Nz, M, N, N])
-            D_img_temp[mask_static] *= np.sqrt(factor_reg_static)
-            D_img[:,i_d,:,:,:] = D_img_temp
+        if not isinstance(mask_static, bool):
+            mask_4D_broadcast = torch.broadcast_to(mask_static, [Nz, 1, M, N, N])
+            D_img[:,i_d:i_d+1,:,:,:][mask_4D_broadcast] *= sqrt_factor_reg_static
+
         i_d += 1
 
     del img_tensor, kernel_row, kernel_col, kernel_slice
@@ -602,6 +605,9 @@ def D_T_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
     N_d = img.shape[1]
     M = img.shape[2]
     N = img.shape[-1]
+    sqrt_reg_time = np.sqrt(reg_time)
+    sqrt_reg_z_over_reg = np.sqrt(reg_z_over_reg)
+    sqrt_factor_reg_static = np.sqrt(factor_reg_static)
 
     D_T_img = torch.zeros([Nz, M, N, N]).cuda()
     D_T_img = type_like(D_T_img, img)
@@ -648,21 +654,21 @@ def D_T_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
     if Nz > 1 and reg_z_over_reg > 0:
 
         # Forward slices term
-        D_T_img[0,:,:,:] += -np.sqrt(reg_z_over_reg) * img[:,i_d,0,:,:]
-        D_T_img[-1,:,:,:] += np.sqrt(reg_z_over_reg) * img[:,i_d,-2,:,:]
+        D_T_img[0,:,:,:] += -sqrt_reg_z_over_reg * img[:,i_d,0,:,:]
+        D_T_img[-1,:,:,:] += sqrt_reg_z_over_reg * img[:,i_d,-2,:,:]
 
-        D_T_img[1:-1,:,:,:] += np.sqrt(reg_z_over_reg) * torch.transpose(torch.nn.functional.conv3d(img[:,i_d:i_d+1,:-1,:,:], kernel_slice, bias=None, stride=1, padding = 0), 0, 2)[:,0,:,:,:]
+        D_T_img[1:-1,:,:,:] += sqrt_reg_z_over_reg * torch.transpose(torch.nn.functional.conv3d(img[:,i_d:i_d+1,:-1,:,:], kernel_slice, bias=None, stride=1, padding = 0), 0, 2)[:,0,:,:,:]
         # Equivalent to above convolution, but higher computational cost
-        # D_T_img[1:-1,:,:,:] += np.sqrt(reg_z_over_reg) * torch.transpose(img[:,i_d,:-2,:,:]-img[:,i_d,1:-1,:,:], 0, 1)
+        # D_T_img[1:-1,:,:,:] += sqrt_reg_z_over_reg * torch.transpose(img[:,i_d,:-2,:,:]-img[:,i_d,1:-1,:,:], 0, 1)
         i_d += 1
 
         # Backward slices term
-        D_T_img[0,:,:,:] += -np.sqrt(reg_z_over_reg) * img[:,i_d,1,:,:]
-        D_T_img[-1,:,:,:] += np.sqrt(reg_z_over_reg) * img[:,i_d,-1,:,:]
+        D_T_img[0,:,:,:] += -sqrt_reg_z_over_reg * img[:,i_d,1,:,:]
+        D_T_img[-1,:,:,:] += sqrt_reg_z_over_reg * img[:,i_d,-1,:,:]
 
-        D_T_img[1:-1,:,:,:] += np.sqrt(reg_z_over_reg) * torch.transpose(torch.nn.functional.conv3d(img[:,i_d:i_d+1,1:,:,:], kernel_slice, bias=None, stride=1, padding = 0), 0, 2)[:,0,:,:,:]
+        D_T_img[1:-1,:,:,:] += sqrt_reg_z_over_reg * torch.transpose(torch.nn.functional.conv3d(img[:,i_d:i_d+1,1:,:,:], kernel_slice, bias=None, stride=1, padding = 0), 0, 2)[:,0,:,:,:]
         # Equivalent to above convolution, but higher computational cost
-        # D_T_img[1:-1,:,:,:] += np.sqrt(reg_z_over_reg) * torch.transpose(img[:,i_d,1:-1,:,:]-img[:,i_d,2:,:,:], 0, 1)
+        # D_T_img[1:-1,:,:,:] += sqrt_reg_z_over_reg * torch.transpose(img[:,i_d,1:-1,:,:]-img[:,i_d,2:,:,:], 0, 1)
         i_d += 1
 
     # From (M, Nd, Nz, N, N) to (Nz, Nd, M, N, N)
@@ -673,20 +679,20 @@ def D_T_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
         D_T_img_time_update = torch.zeros_like(D_T_img)
 
         # Forward time term
-        D_T_img_time_update[:,1:-1,:,:] += np.sqrt(reg_time) * (img[:,i_d,:-2,:,:]-img[:,i_d,1:-1,:,:])
-        D_T_img_time_update[:,0,:,:] += -np.sqrt(reg_time) * img[:,i_d,0,:,:]
-        D_T_img_time_update[:,-1,:,:] += np.sqrt(reg_time) * img[:,i_d,-2,:,:]
+        D_T_img_time_update[:,1:-1,:,:] += sqrt_reg_time * (img[:,i_d,:-2,:,:]-img[:,i_d,1:-1,:,:])
+        D_T_img_time_update[:,0,:,:] += -sqrt_reg_time * img[:,i_d,0,:,:]
+        D_T_img_time_update[:,-1,:,:] += sqrt_reg_time * img[:,i_d,-2,:,:]
         i_d += 1
 
         # Backward time term
-        D_T_img_time_update[:,1:-1,:,:] += np.sqrt(reg_time) * (img[:,i_d,1:-1,:,:]-img[:,i_d,2:,:,:])
-        D_T_img_time_update[:,0,:,:] += -np.sqrt(reg_time) * img[:,i_d,1,:,:]
-        D_T_img_time_update[:,-1,:,:] += np.sqrt(reg_time) * img[:,i_d,-1,:,:]
+        D_T_img_time_update[:,1:-1,:,:] += sqrt_reg_time * (img[:,i_d,1:-1,:,:]-img[:,i_d,2:,:,:])
+        D_T_img_time_update[:,0,:,:] += -sqrt_reg_time * img[:,i_d,1,:,:]
+        D_T_img_time_update[:,-1,:,:] += sqrt_reg_time * img[:,i_d,-1,:,:]
         i_d += 1
 
-        if isinstance(mask_static, np.ndarray):
-            mask_static = torch.as_tensor(np.tile(mask_static, [Nz, M, 1, 1]))
-            D_T_img_time_update[mask_static] *= np.sqrt(factor_reg_static)
+        if not isinstance(mask_static, bool):
+            mask_4D_broadcast = torch.broadcast_to(mask_static, [Nz, M, N, N])
+            D_T_img_time_update[mask_4D_broadcast] *= sqrt_factor_reg_static
 
         D_T_img += D_T_img_time_update
         i_d += 1
@@ -733,6 +739,9 @@ def D_T_downwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, f
     N_d = img.shape[1]
     M = img.shape[2]
     N = img.shape[-1]
+    sqrt_reg_time = np.sqrt(reg_time)
+    sqrt_reg_z_over_reg = np.sqrt(reg_z_over_reg)
+    sqrt_factor_reg_static = np.sqrt(factor_reg_static)
 
     D_T_img = torch.zeros([Nz, M, N, N]).cuda()
     D_T_img = type_like(D_T_img, img)
@@ -768,12 +777,12 @@ def D_T_downwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, f
     i_d = 2
     if Nz > 1 and reg_z_over_reg > 0:
         # Backward slices term
-        D_T_img[0,:,:,:] += -np.sqrt(reg_z_over_reg) * img[:,i_d,1,:,:]
-        D_T_img[-1,:,:,:] += np.sqrt(reg_z_over_reg) * img[:,i_d,-1,:,:]
+        D_T_img[0,:,:,:] += -sqrt_reg_z_over_reg * img[:,i_d,1,:,:]
+        D_T_img[-1,:,:,:] += sqrt_reg_z_over_reg * img[:,i_d,-1,:,:]
 
-        D_T_img[1:-1,:,:,:] += np.sqrt(reg_z_over_reg) * torch.transpose(torch.nn.functional.conv3d(img[:,i_d:i_d+1,1:,:,:], kernel_slice, bias=None, stride=1, padding = 0), 0, 2)[:,0,:,:,:]
+        D_T_img[1:-1,:,:,:] += sqrt_reg_z_over_reg * torch.transpose(torch.nn.functional.conv3d(img[:,i_d:i_d+1,1:,:,:], kernel_slice, bias=None, stride=1, padding = 0), 0, 2)[:,0,:,:,:]
         # Equivalent to above convolution, but higher computational cost
-        # D_T_img[1:-1,:,:,:] += np.sqrt(reg_z_over_reg) * torch.transpose(img[:,i_d,1:-1,:,:]-img[:,i_d,2:,:,:], 0, 1)
+        # D_T_img[1:-1,:,:,:] += sqrt_reg_z_over_reg * torch.transpose(img[:,i_d,1:-1,:,:]-img[:,i_d,2:,:,:], 0, 1)
         i_d += 1
 
     # From (M, Nd, Nz, N, N) to (Nz, Nd, M, N, N)
@@ -784,13 +793,14 @@ def D_T_downwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, f
         # Given that M is usually <10, it's not worth using the convolution operator there
         D_T_img_time_update = torch.zeros_like(D_T_img)
 
-        D_T_img_time_update[:,1:-1,:,:] += np.sqrt(reg_time) * (img[:,i_d,1:-1,:,:]-img[:,i_d,2:,:,:])
-        D_T_img_time_update[:,0,:,:] += -np.sqrt(reg_time) * img[:,i_d,1,:,:]
-        D_T_img_time_update[:,-1,:,:] += np.sqrt(reg_time) * img[:,i_d,-1,:,:]
+        D_T_img_time_update[:,1:-1,:,:] += sqrt_reg_time * (img[:,i_d,1:-1,:,:]-img[:,i_d,2:,:,:])
+        D_T_img_time_update[:,0,:,:] += -sqrt_reg_time * img[:,i_d,1,:,:]
+        D_T_img_time_update[:,-1,:,:] += sqrt_reg_time * img[:,i_d,-1,:,:]
 
-        if isinstance(mask_static, np.ndarray):
-            mask_static = torch.as_tensor(np.tile(mask_static, [Nz, M, 1, 1]))
-            D_T_img_time_update[mask_static] *= np.sqrt(factor_reg_static)
+        if not isinstance(mask_static, bool):
+            mask_4D_broadcast = torch.broadcast_to(mask_static, [Nz, M, N, N])
+            D_T_img_time_update[mask_4D_broadcast] *= sqrt_factor_reg_static
+
         D_T_img += D_T_img_time_update
         i_d += 1
 
@@ -836,6 +846,9 @@ def D_T_upwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
     N_d = img.shape[1]
     M = img.shape[2]
     N = img.shape[-1]
+    sqrt_reg_time = np.sqrt(reg_time)
+    sqrt_reg_z_over_reg = np.sqrt(reg_z_over_reg)
+    sqrt_factor_reg_static = np.sqrt(factor_reg_static)
 
     D_T_img = torch.zeros([Nz, M, N, N]).cuda()
     D_T_img = type_like(D_T_img, img)
@@ -871,12 +884,12 @@ def D_T_upwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
     i_d = 2
     if Nz > 1 and reg_z_over_reg > 0:
         # Forward slices term
-        D_T_img[0,:,:,:] += -np.sqrt(reg_z_over_reg) * img[:,i_d,0,:,:]
-        D_T_img[-1,:,:,:] += np.sqrt(reg_z_over_reg) * img[:,i_d,-2,:,:]
+        D_T_img[0,:,:,:] += -sqrt_reg_z_over_reg * img[:,i_d,0,:,:]
+        D_T_img[-1,:,:,:] += sqrt_reg_z_over_reg * img[:,i_d,-2,:,:]
 
-        D_T_img[1:-1,:,:,:] += np.sqrt(reg_z_over_reg) * torch.transpose(torch.nn.functional.conv3d(img[:,i_d:i_d+1,:-1,:,:], kernel_slice, bias=None, stride=1, padding = 0), 0, 2)[:,0,:,:,:]
+        D_T_img[1:-1,:,:,:] += sqrt_reg_z_over_reg * torch.transpose(torch.nn.functional.conv3d(img[:,i_d:i_d+1,:-1,:,:], kernel_slice, bias=None, stride=1, padding = 0), 0, 2)[:,0,:,:,:]
         # Equivalent to above convolution, but higher computational cost
-        # D_T_img[1:-1,:,:,:] += np.sqrt(reg_z_over_reg) * torch.transpose(img[:,i_d,:-2,:,:]-img[:,i_d,1:-1,:,:], 0, 1)
+        # D_T_img[1:-1,:,:,:] += sqrt_reg_z_over_reg * torch.transpose(img[:,i_d,:-2,:,:]-img[:,i_d,1:-1,:,:], 0, 1)
 
         i_d += 1
 
@@ -888,13 +901,14 @@ def D_T_upwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
         # Given that M is usually <10, it's not worth using the convolution operator there
         D_T_img_time_update = torch.zeros_like(D_T_img)
 
-        D_T_img_time_update[:,1:-1,:,:] += np.sqrt(reg_time) * (img[:,i_d,:-2,:,:]-img[:,i_d,1:-1,:,:])
-        D_T_img_time_update[:,0,:,:] += -np.sqrt(reg_time) * img[:,i_d,0,:,:]
-        D_T_img_time_update[:,-1,:,:] += np.sqrt(reg_time) * img[:,i_d,-2,:,:]
+        D_T_img_time_update[:,1:-1,:,:] += sqrt_reg_time * (img[:,i_d,:-2,:,:]-img[:,i_d,1:-1,:,:])
+        D_T_img_time_update[:,0,:,:] += -sqrt_reg_time * img[:,i_d,0,:,:]
+        D_T_img_time_update[:,-1,:,:] += sqrt_reg_time * img[:,i_d,-2,:,:]
 
-        if isinstance(mask_static, np.ndarray):
-            mask_static = torch.as_tensor(np.tile(mask_static, [Nz, M, 1, 1]))
-            D_T_img_time_update[mask_static] *= np.sqrt(factor_reg_static)
+        if not isinstance(mask_static, bool):
+            mask_4D_broadcast = torch.broadcast_to(mask_static, [Nz, M, N, N])
+            D_T_img_time_update[mask_4D_broadcast] *= sqrt_factor_reg_static
+
         D_T_img += D_T_img_time_update
         i_d += 1
 
@@ -940,6 +954,9 @@ def D_T_central(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fa
     N_d = img.shape[1]
     M = img.shape[2]
     N = img.shape[-1]
+    sqrt_reg_time = np.sqrt(reg_time)
+    sqrt_reg_z_over_reg = np.sqrt(reg_z_over_reg)
+    sqrt_factor_reg_static = np.sqrt(factor_reg_static)
 
     D_T_img = torch.zeros([Nz, M, N, N]).cuda()
     D_T_img = type_like(D_T_img, img)
@@ -977,12 +994,12 @@ def D_T_central(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fa
     # Forward slices term
     if Nz > 1 and reg_z_over_reg > 0:
         if Nz == 2: # Use upwind scheme instead
-            D_T_img[1:,:,:,:] += np.sqrt(reg_z_over_reg) * img[:-1, i_d, :, :, :]
-            D_T_img[:-1,:,:,:] += -np.sqrt(reg_z_over_reg) * img[:-1, i_d, :, :, :]
+            D_T_img[1:,:,:,:] += sqrt_reg_z_over_reg * img[:-1, i_d, :, :, :]
+            D_T_img[:-1,:,:,:] += -sqrt_reg_z_over_reg * img[:-1, i_d, :, :, :]
         else:
-            D_T_img[0:2,:,:,:] += - np.sqrt(reg_z_over_reg) * torch.transpose(img[:,i_d,1:3,:,:], 0, 1)
-            D_T_img[-2:,:,:,:] += np.sqrt(reg_z_over_reg) * torch.transpose(img[:,i_d,-3:-1,:,:], 0, 1)
-            D_T_img[2:-2,:,:,:] += np.sqrt(reg_z_over_reg) * torch.transpose(torch.nn.functional.conv3d(img[:,i_d:i_d+1,1:-1,:,:], kernel_slice, bias=None, stride=1, padding = 0), 0, 2)[:,0,:,:,:]
+            D_T_img[0:2,:,:,:] += - sqrt_reg_z_over_reg * torch.transpose(img[:,i_d,1:3,:,:], 0, 1)
+            D_T_img[-2:,:,:,:] += sqrt_reg_z_over_reg * torch.transpose(img[:,i_d,-3:-1,:,:], 0, 1)
+            D_T_img[2:-2,:,:,:] += sqrt_reg_z_over_reg * torch.transpose(torch.nn.functional.conv3d(img[:,i_d:i_d+1,1:-1,:,:], kernel_slice, bias=None, stride=1, padding = 0), 0, 2)[:,0,:,:,:]
         i_d += 1
 
     # From (M, Nd, Nz, N, N) to (Nz, Nd, M, N, N)
@@ -994,15 +1011,16 @@ def D_T_central(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fa
         D_T_img_time_update = torch.zeros_like(D_T_img)
 
         if M == 2:
-            D_T_img_time_update[:, 1:, :, :] += np.sqrt(reg_time) * img[:, i_d, :-1, :, :]
-            D_T_img_time_update[:, :-1, :, :] += -np.sqrt(reg_time) * img[:, i_d, :-1, :, :]
+            D_T_img_time_update[:, 1:, :, :] += sqrt_reg_time * img[:, i_d, :-1, :, :]
+            D_T_img_time_update[:, :-1, :, :] += -sqrt_reg_time * img[:, i_d, :-1, :, :]
         else:
-            D_T_img_time_update[:, 2:, :, :] += np.sqrt(reg_time) * img[:, i_d, 1:-1, :, :]
-            D_T_img_time_update[:, :-2, :, :] += -np.sqrt(reg_time) * img[:, i_d, 1:-1, :, :]
+            D_T_img_time_update[:, 2:, :, :] += sqrt_reg_time * img[:, i_d, 1:-1, :, :]
+            D_T_img_time_update[:, :-2, :, :] += -sqrt_reg_time * img[:, i_d, 1:-1, :, :]
 
-        if isinstance(mask_static, np.ndarray):
-            mask_static = torch.as_tensor(np.tile(mask_static, [Nz, M, 1, 1]))
-            D_T_img_time_update[mask_static] *= np.sqrt(factor_reg_static)
+        if not isinstance(mask_static, bool):
+            mask_4D_broadcast = torch.broadcast_to(mask_static, [Nz, M, N, N])
+            D_T_img_time_update[mask_4D_broadcast] *= sqrt_factor_reg_static
+
         D_T_img += D_T_img_time_update
         i_d += 1
 
