@@ -234,6 +234,8 @@ def D_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, facto
         D_img[:, i_d+1, 1:, :, :] = D_img[:, i_d, :-1, :, :]
 
         if not isinstance(mask_static, bool):
+            if isinstance(mask_static, np.ndarray):
+                mask_static = torch.as_tensor(mask_static)
             mask_4D_broadcast = torch.broadcast_to(mask_static, [Nz, 2, M, N, N])
             D_img[:,i_d:i_d+2,:,:,:][mask_4D_broadcast] *= sqrt_factor_reg_static
 
@@ -341,6 +343,8 @@ def D_downwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
         # D_img[:, i_d, 1:, :, :] = sqrt_reg_time * torch.nn.functional.conv3d(img_tensor, kernel_slice, bias=None, stride=1, padding = 0)[:, 0, :, :, :]
 
         if not isinstance(mask_static, bool):
+            if isinstance(mask_static, np.ndarray):
+                mask_static = torch.as_tensor(mask_static)
             mask_4D_broadcast = torch.broadcast_to(mask_static, [Nz, 1, M, N, N])
             D_img[:,i_d:i_d+1,:,:,:][mask_4D_broadcast] *= sqrt_factor_reg_static
 
@@ -448,6 +452,8 @@ def D_upwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, facto
         # D_img[:, i_d, :-1, :, :] = sqrt_reg_time * torch.nn.functional.conv3d(img_tensor, kernel_slice, bias=None, stride=1, padding = 0)[:, 0, :, :, :]
 
         if not isinstance(mask_static, bool):
+            if isinstance(mask_static, np.ndarray):
+                mask_static = torch.as_tensor(mask_static)
             mask_4D_broadcast = torch.broadcast_to(mask_static, [Nz, 1, M, N, N])
             D_img[:,i_d:i_d+1,:,:,:][mask_4D_broadcast] *= sqrt_factor_reg_static
 
@@ -558,6 +564,8 @@ def D_central(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fact
             D_img[:, i_d, 1:-1, :, :] = sqrt_reg_time * (img_tensor[:, 2:, :, :] - img_tensor[:, :-2, :, :])
 
         if not isinstance(mask_static, bool):
+            if isinstance(mask_static, np.ndarray):
+                mask_static = torch.as_tensor(mask_static)
             mask_4D_broadcast = torch.broadcast_to(mask_static, [Nz, 1, M, N, N])
             D_img[:,i_d:i_d+1,:,:,:][mask_4D_broadcast] *= sqrt_factor_reg_static
 
@@ -691,6 +699,8 @@ def D_T_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
         i_d += 1
 
         if not isinstance(mask_static, bool):
+            if isinstance(mask_static, np.ndarray):
+                mask_static = torch.as_tensor(mask_static)
             mask_4D_broadcast = torch.broadcast_to(mask_static, [Nz, M, N, N])
             D_T_img_time_update[mask_4D_broadcast] *= sqrt_factor_reg_static
 
@@ -798,6 +808,8 @@ def D_T_downwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, f
         D_T_img_time_update[:,-1,:,:] += sqrt_reg_time * img[:,i_d,-1,:,:]
 
         if not isinstance(mask_static, bool):
+            if isinstance(mask_static, np.ndarray):
+                mask_static = torch.as_tensor(mask_static)
             mask_4D_broadcast = torch.broadcast_to(mask_static, [Nz, M, N, N])
             D_T_img_time_update[mask_4D_broadcast] *= sqrt_factor_reg_static
 
@@ -825,7 +837,7 @@ def D_T_upwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
         The ratio of the regularization parameter in the z direction, versus the x-y plane.
     reg_time : float
         The ratio (\mu) of the regularization parameter in the time direction, versus the x-y plane.
-    mask_static : np.ndarray
+    mask_static : np.ndarray or torch.Tensor
         An of dimensions 1 x 1 x N x N serving as a mask to indicate pixels on which to enforce a different
         time regularization parameter, for instance used to enforce more static regions in the image.
     factor_reg_static : float
@@ -906,6 +918,8 @@ def D_T_upwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
         D_T_img_time_update[:,-1,:,:] += sqrt_reg_time * img[:,i_d,-2,:,:]
 
         if not isinstance(mask_static, bool):
+            if isinstance(mask_static, np.ndarray):
+                mask_static = torch.as_tensor(mask_static)
             mask_4D_broadcast = torch.broadcast_to(mask_static, [Nz, M, N, N])
             D_T_img_time_update[mask_4D_broadcast] *= sqrt_factor_reg_static
 
@@ -1018,6 +1032,8 @@ def D_T_central(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fa
             D_T_img_time_update[:, :-2, :, :] += -sqrt_reg_time * img[:, i_d, 1:-1, :, :]
 
         if not isinstance(mask_static, bool):
+            if isinstance(mask_static, np.ndarray):
+                mask_static = torch.as_tensor(mask_static)
             mask_4D_broadcast = torch.broadcast_to(mask_static, [Nz, M, N, N])
             D_T_img_time_update[mask_4D_broadcast] *= sqrt_factor_reg_static
 
