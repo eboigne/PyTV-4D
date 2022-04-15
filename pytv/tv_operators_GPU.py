@@ -84,10 +84,10 @@ def compute_L21_norm(D_img, return_array = False, return_pytorch_tensor = False)
         if return_pytorch_tensor:
             return(l21_norm, out)
         else:
-            return(l21_norm.cpu().detach().numpy(), out)
+            return(l21_norm.detach().cpu().numpy(), out)
     else:
         del out
-        return(l21_norm.cpu().detach().numpy())
+        return(l21_norm.detach().cpu().numpy())
 
 def type_like(array, array_ref):
     '''
@@ -242,7 +242,7 @@ def D_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, facto
     del img_tensor, kernel_row, kernel_col, kernel_slice
 
     if not return_pytorch_tensor:
-        D_img2 = D_img.cpu().detach().numpy()
+        D_img2 = D_img.detach().cpu().numpy()
         del D_img
         D_img = D_img2
 
@@ -349,7 +349,7 @@ def D_downwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
     del img_tensor, kernel_row, kernel_col, kernel_slice
 
     if not return_pytorch_tensor:
-        D_img2 = D_img.cpu().detach().numpy()
+        D_img2 = D_img.detach().cpu().numpy()
         del D_img
         D_img = D_img2
 
@@ -456,7 +456,7 @@ def D_upwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, facto
     del img_tensor, kernel_row, kernel_col, kernel_slice
 
     if not return_pytorch_tensor:
-        D_img2 = D_img.cpu().detach().numpy()
+        D_img2 = D_img.detach().cpu().numpy()
         del D_img
         D_img = D_img2
 
@@ -566,7 +566,7 @@ def D_central(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fact
     del img_tensor, kernel_row, kernel_col, kernel_slice
 
     if not return_pytorch_tensor:
-        D_img2 = D_img.cpu().detach().numpy()
+        D_img2 = D_img.detach().cpu().numpy()
         del D_img
         D_img = D_img2
 
@@ -700,7 +700,7 @@ def D_T_hybrid(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
     del img, kernel_row, kernel_col, kernel_slice
 
     if not return_pytorch_tensor:
-        D_T_img2 = D_T_img.cpu().detach().numpy()
+        D_T_img2 = D_T_img.detach().cpu().numpy()
         del D_T_img
         D_T_img = D_T_img2
 
@@ -807,7 +807,7 @@ def D_T_downwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, f
     del img, kernel_row, kernel_col, kernel_slice
 
     if not return_pytorch_tensor:
-        D_T_img2 = D_T_img.cpu().detach().numpy()
+        D_T_img2 = D_T_img.detach().cpu().numpy()
         del D_T_img
         D_T_img = D_T_img2
 
@@ -915,7 +915,7 @@ def D_T_upwind(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fac
     del img, kernel_row, kernel_col, kernel_slice
 
     if not return_pytorch_tensor:
-        D_T_img2 = D_T_img.cpu().detach().numpy()
+        D_T_img2 = D_T_img.detach().cpu().numpy()
         del D_T_img
         D_T_img = D_T_img2
 
@@ -1029,7 +1029,7 @@ def D_T_central(img, reg_z_over_reg = 1.0, reg_time = 0, mask_static = False, fa
     D_T_img /= 2.0
 
     if not return_pytorch_tensor:
-        D_T_img2 = D_T_img.cpu().detach().numpy()
+        D_T_img2 = D_T_img.detach().cpu().numpy()
         del D_T_img
         D_T_img = D_T_img2
 

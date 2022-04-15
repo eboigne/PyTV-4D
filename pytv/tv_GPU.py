@@ -131,12 +131,12 @@ def tv_hybrid(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static 
         if return_pytorch_tensor:
             return(tv, G)
         else:
-            return(tv, G.cpu().detach().numpy())
+            return(tv, G.detach().cpu().numpy())
     else:
         if return_pytorch_tensor:
             return(tv, G, grad_norms)
         else:
-            return(tv, G.cpu().detach().numpy(), grad_norms.cpu().detach().numpy())
+            return(tv, G.detach().cpu().numpy(), grad_norms.detach().cpu().numpy())
 
 
 def tv_downwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static = False, factor_reg_static = 0, return_pytorch_tensor = False, return_grad_norms = False):
@@ -207,12 +207,12 @@ def tv_downwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_stati
         if return_pytorch_tensor:
             return(tv, G)
         else:
-            return(tv, G.cpu().detach().numpy())
+            return(tv, G.detach().cpu().numpy())
     else:
         if return_pytorch_tensor:
             return(tv, G, grad_norms)
         else:
-            return(tv, G.cpu().detach().numpy(), grad_norms.cpu().detach().numpy())
+            return(tv, G.detach().cpu().numpy(), grad_norms.detach().cpu().numpy())
 
 def tv_upwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static = False, factor_reg_static = 0, return_pytorch_tensor = False, return_grad_norms = False):
     '''
@@ -280,12 +280,12 @@ def tv_upwind(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static 
         if return_pytorch_tensor:
             return(tv, G)
         else:
-            return(tv, G.cpu().detach().numpy())
+            return(tv, G.detach().cpu().numpy())
     else:
         if return_pytorch_tensor:
             return(tv, G, grad_norms)
         else:
-            return(tv, G.cpu().detach().numpy(), grad_norms.cpu().detach().numpy())
+            return(tv, G.detach().cpu().numpy(), grad_norms.detach().cpu().numpy())
 
 def tv_central(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static = False, factor_reg_static = 0, return_pytorch_tensor = False, return_grad_norms = False):
     '''
@@ -367,10 +367,10 @@ def tv_central(img, mask = [], reg_z_over_reg = 1.0, reg_time = 0.0, mask_static
         if return_pytorch_tensor:
             return(tv, G)
         else:
-            return(tv, G.cpu().detach().numpy())
+            return(tv, G.detach().cpu().numpy())
     else:
         if return_pytorch_tensor:
             return(tv, G, grad_norms)
         else:
-            return(tv, G.cpu().detach().numpy(), grad_norms.cpu().detach().numpy())
+            return(tv, G.detach().cpu().numpy(), grad_norms.detach().cpu().numpy())
 

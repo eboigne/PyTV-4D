@@ -282,7 +282,7 @@ def test_tv_G_D_DT_3D(tv_scheme, N = 100, Nz = 20, tolerance = 1e-5, cpu_only = 
         tv4 = eval('tv_operators_GPU.compute_L21_norm(D4)')
         time4 = time.time() - tic
         DT_D4 = eval('tv_operators_GPU.D_T_'+tv_scheme+'(D4)')
-        D4 = D4.cpu().detach().numpy()
+        D4 = D4.detach().cpu().numpy()
 
 
     if cpu_only:
@@ -340,7 +340,7 @@ def test_tv_D_DT_4D(tv_scheme, N = 100, Nz = 20, M = [2, 3, 4, 8], reg_time = 1.
             tv4 = eval('tv_operators_GPU.compute_L21_norm(D4)')
             time4 += time.time() - tic
             DT_D4 = eval('tv_operators_GPU.D_T_'+tv_scheme+'(D4.cuda(), reg_time = '+str(reg_time)+')')
-            D4 = D4.cpu().detach().numpy()
+            D4 = D4.detach().cpu().numpy()
 
         if cpu_only:
             assert test_equal([tv1, tv3], tolerance = tolerance), 'TV values are not equal'
