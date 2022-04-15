@@ -42,6 +42,8 @@
 
 
 from setuptools import setup
+import codecs
+import os.path
 
 requirements = [
 	'numpy',
@@ -49,9 +51,23 @@ requirements = [
 	# 'pytorch>=1.5.0'
 ]
 
+# Read version from __init__.py (See: https://packaging.python.org/en/latest/guides/single-sourcing-package-version/)
+def read(rel_path):
+    here = os.path.abspath(os.path.dirname(__file__))
+    with codecs.open(os.path.join(here, rel_path), 'r') as fp:
+        return fp.read()
+def get_version(rel_path):
+    for line in read(rel_path).splitlines():
+        if line.startswith('__version__'):
+            delim = '"' if '"' in line else "'"
+            return line.split(delim)[1]
+    else:
+        raise RuntimeError('Unable to find version string.')
+version=get_version('pytv/__init__.py')
+
 setup(
     name='PyTV',
-    version='1.1.2',
+    version=version,
     description='',
     license='GNUv3',
     author='Emeric Boigné',
