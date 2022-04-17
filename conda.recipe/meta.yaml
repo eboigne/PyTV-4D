@@ -80,7 +80,7 @@ requirements:
 #     - pytest # The pytest program will run all files *_test. py and test_*.py
 
 about:
-  home: https://github.com/eboigne/PyTV
+  home: https://github.com/eboigne/PyTV-4D
   summary: Python routines to compute the Total Variation (TV) of 2D, 3D and 4D images on CPU & GPU. Compatible with proximal algorithms (ADMM, Chambolle & Pock, ...).
   license: {{ data.get('license') }}
   license_file: LICENSE
