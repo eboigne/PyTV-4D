@@ -234,8 +234,7 @@ tv4 = tv.compute_L21_norm(D_img4)
 - Time discretization in the operator forms: the discretization scheme used along the time direction is the same as the spatial scheme for each discretization. For the `central` scheme that require M>2, the `upwind` scheme is used instead for the time discretization for cases with M=2.
 
 # Cite
-
-Please cite PyTV-4D in your publications if it helps your research:
+Please refer to the following article in your publications if you use PyTV-4D for your research:
 ```
 @article{boigne2022towards,
   title={{Towards data-informed motion artifact reduction in quantitative CT using piecewise linear interpolation}},
