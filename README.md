@@ -14,6 +14,7 @@ A set of Python routines to compute the Total Variation (TV) of 2D, 3D and 4D (3
 - [TV definition](#tv-definition)
 - [Comments](#comments)
 - [Cite](#cite)
+- [License](#license)
 
 # Current features
 
@@ -243,6 +244,10 @@ Please refer to the following article in your publications if you use PyTV-4D fo
   year={2022}
 }
 ```
+
+# License
+
+PyTV-4D is open source under the GPLv3 license.
 
 # To do
 
