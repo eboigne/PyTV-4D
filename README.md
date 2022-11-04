@@ -1,5 +1,6 @@
 # PyTV-4D
 A set of Python routines to compute the Total Variation (TV) of 2D, 3D and 4D (3D and time) images on CPU & GPU, in application to image denoizing and iterative Computed Tomography (CT) reconstructions. The time-resolved capabilities are useful for dynamic CT or motion artifact corrections.
+This is the code used in [this article](http://dx.doi.org/10.1109/TCI.2022.3215096).
 
 - [Current features](#current-features)
 - [Installation](#installation)
