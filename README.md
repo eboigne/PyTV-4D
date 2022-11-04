@@ -238,10 +238,13 @@ tv4 = tv.compute_L21_norm(D_img4)
 Please refer to the following article in your publications if you use PyTV-4D for your research:
 ```
 @article{boigne2022towards,
-  title={{Towards data-informed motion artifact reduction in quantitative CT using piecewise linear interpolation}},
-  author={Boign\'e, Emeric and Parkinson, Dilworth Y. and Ihme, Matthias},
-  journal={Under review},
-  year={2022}
+author={Boign{\'e}, Emeric and Parkinson, Dilworth Y. and Ihme, Matthias},
+journal={{IEEE Transactions on Computational Imaging}},
+title={{Towards data-informed motion artifact reduction in quantitative CT using piecewise linear interpolation}},
+year={2022},
+volume={8},
+pages={917-932},
+doi={10.1109/TCI.2022.3215096}
 }
 ```
 
