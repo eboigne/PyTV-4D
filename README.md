@@ -256,3 +256,5 @@ PyTV-4D is open source under the GPLv3 license.
 # To do
 
 - Replace mask_static, factor_reg_static with a weight matrix of size Nz x M x N x N that is passed directly onto all functions
+- Implement pytv for non-square images
+- In 2D, write function to match [the `denoise_tv_chambolle` function from scikit-image ](https://scikit-image.org/docs/stable/api/skimage.restoration.html#skimage.restoration.denoise_tv_chambolle) with a PyTV-4D algorithm.
